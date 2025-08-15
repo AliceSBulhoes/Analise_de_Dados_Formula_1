@@ -1,12 +1,14 @@
 import streamlit as st
-
+import os
 
 def navbar() -> None:
     """Função para renderizar a barra de navegação"""
 
+    st.logo(os.path.abspath("assets/img/formula_1_logo.png"))
+
     # Dicionário com as páginas
     pages = {
-        "Menu": [
+        "": [
             st.Page("pages/sobre.py", title="Sobre"),
             st.Page("pages/analise_de_dados.py", title="Análise de Dados"),
         ]
@@ -31,7 +33,7 @@ def config() -> None:
     # Configurações do Streamlit
     st.set_page_config(
         page_title="Data Science",
-        page_icon="📊",
+        page_icon=":material/bid_landscape:",
         layout="wide",
         initial_sidebar_state="expanded",
     )

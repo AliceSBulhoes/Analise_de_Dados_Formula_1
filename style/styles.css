@@ -10,22 +10,27 @@
 
 /* Variáveis */
 :root{
+    /* Cor */
     --color-red: #EE0000;
     --color-gray-100: #38383F;
     --color-gray-200: #555555;
     --color-gray-300: #15151E;
     --color-white: #FFFFFF;
+
+    /* Fonte */
+    --font-montserrat: "Montserrat", sans-serif;
 }
 
 /* Títulos das Páginas */
 .titulo h1{
-    font-family: "Montserrat", sans-serif;
+    font-family: var(--font-montserrat);
     color: var(--color-white);
     font-weight: 700;
     font-size: 2.5rem;
 }
 
 /* Sidebar */
+/* Sombra da Sidebar */
 [data-testid="stSidebarContent"] {
     border-right: var(--color-gray-100) 0.12rem solid;
     box-shadow: 1px 1px 51px 16px rgba(0,0,0,0.42);
@@ -33,29 +38,28 @@
     -moz-box-shadow: 1px 1px 51px 16px rgba(0,0,0,0.42);
 }
 
+/* Estilo do texto */
 [data-testid="stSidebarNav"] span {
-    font-family: "Montserrat", sans-serif;
+    font-family: var(--font-montserrat);
     color: var(--color-white);
     font-weight: 400;
     font-size: 1.1rem;
 }
 
-
+/* Container do texto */
 [data-testid="stSidebarNav"] a{
     display: flex;
     gap: 1.2rem;
-    padding: 0.6rem;
+    padding: 0.5rem 1rem;
     border-bottom: 0.1rem solid var(--color-white);
     border-right: 0.1rem solid var(--color-white);
     border-radius: 0.5rem 0 0.5rem 0;
     margin-bottom: 1rem;
 }
 
-
-
-
+/* Texto do Header do Navbar [Não Utilizado] */
 [data-testid="stSidebarNav"] [data-testid="stNavSectionHeader"] {
-    font-family: "Montserrat", sans-serif;
+    font-family: var(--font-montserrat);
     color: var(--color-white);
     font-weight: 800;
     font-size: 1.2rem;
