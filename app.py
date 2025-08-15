@@ -7,8 +7,8 @@ def navbar() -> None:
     # Dicionário com as páginas
     pages = {
         "Menu": [
-            st.Page("pages/sobre.py", title="Sobre", icon="ℹ️"),
-            st.Page("pages/analise_de_dados.py", title="Análise de Dados", icon="📊"),
+            st.Page("pages/sobre.py", title="Sobre"),
+            st.Page("pages/analise_de_dados.py", title="Análise de Dados"),
         ]
     }
 
