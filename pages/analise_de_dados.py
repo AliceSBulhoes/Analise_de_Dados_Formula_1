@@ -5,7 +5,7 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 # Importando funções auxiliares
-from utils.data_fetch import *
+from utils.tratamento_dados import *
 from utils.api_wiki import get_wikipedia_summary
 
 # ------------------------------
@@ -13,32 +13,7 @@ from utils.api_wiki import get_wikipedia_summary
 # ------------------------------
 DATA_FRAME = {}
 PILOTO = ""
-
-# ------------------------------
-# Selecionar o Piloto
-# ------------------------------
-def selecionar_piloto() -> None:
-    """Função para selecionar o piloto a ser analisado"""
-    # Lista de pilotos disponíveis
-    pilotos = ["Lewis Hamilton"]
-
-    # Carregar os dados dos pilotos
-    PILOTO = st.sidebar.selectbox("Escolha um piloto:", pilotos)
-    piloto_name = PILOTO.split()
-
-    # Coletar o DataFrame do piloto selecionado
-    df_corridas = get_corridas_piloto(piloto_name[0], piloto_name[1])
-
-    # Verificar se o DataFrame está vazio
-    if df_corridas.empty:
-        st.warning("Nenhum dado encontrado para o piloto selecionado.")
-        return
-
-    # Adicionar o DataFrame ao dicionário global
-    DATA_FRAME["df_corridas"] = df_corridas
-    DATA_FRAME["df_piloto_info"] = get_piloto_info(piloto_name[0], piloto_name[1])
     
-
 # ------------------------------
 # Contexto
 # ------------------------------
@@ -81,9 +56,6 @@ def conteudo() -> None:
     )
 
     contexto_conteudo()
-    sobre_piloto()
 
 
-
-selecionar_piloto()
 conteudo()

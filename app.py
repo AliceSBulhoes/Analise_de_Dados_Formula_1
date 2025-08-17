@@ -12,6 +12,7 @@ def navbar() -> None:
             st.Page("pages/sobre.py", title="Sobre"),
             st.Page("pages/minhas_skills.py", title="Minhas Skills"),
             st.Page("pages/analise_de_dados.py", title="Análise de Dados"),
+            st.Page("pages/dashboard.py", title="Dashboard"),
         ]
     }
 
