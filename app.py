@@ -8,9 +8,12 @@ def navbar() -> None:
 
     # Dicionário com as páginas
     pages = {
-        "": [
-            st.Page("pages/sobre.py", title="Sobre"),
+        "Sobre Mim": [
+            st.Page("pages/sobre.py", title="Home"),
+            st.Page("pages/certificados.py", title="Certificados"),
             st.Page("pages/minhas_skills.py", title="Minhas Skills"),
+        ],
+        "Análise de Dados" : [
             st.Page("pages/analise_de_dados.py", title="Análise de Dados"),
             st.Page("pages/dashboard.py", title="Dashboard"),
         ]

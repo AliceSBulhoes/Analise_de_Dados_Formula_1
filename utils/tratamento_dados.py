@@ -1,6 +1,6 @@
 import pandas as pd
 from datetime import datetime as dt
-from data_frames import *
+from utils.data_frames import *
 
 # Variável global
 EQUIPES_CORES = {
