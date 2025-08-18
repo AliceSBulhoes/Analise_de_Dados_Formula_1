@@ -28,8 +28,6 @@ def contexto_conteudo() -> None:
                     <h2>Contexto</h2>
                     <div class="contexto">
                         <p>A <strong>Fórmula 1</strong> é a categoria mais prestigiada do automobilismo mundial. Muitos pilotos sonham em competir nesse nível, mas apenas alguns conseguem transformar esse objetivo em realidade. Dentre esses, poucos alcançam o título de campeão mundial.</p>
-                        <p>Esta análise tem como foco investigar se apenas o talento é suficiente para conquistar o topo ou se outros fatores, como esforço e contexto, também são determinantes.</p>
-                        <p>Ao navegar por este dashboard, é possível acompanhar a evolução dos pilotos ao longo das temporadas e observar como diferentes elementos influenciam o desempenho nas pistas. Fatores como a equipe, o carro utilizado e as condições da corrida são peças importantes desse quebra-cabeça competitivo.</p>
                     </div>
                 </div>
             """,
