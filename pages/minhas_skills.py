@@ -23,9 +23,16 @@ def skill_card(nome, nivel):
         text-align: center;
         background: rgba(255,255,255,0.05);
         box-shadow: 0px 0px 15px {cor}66;
+        min-height: 38dvh;
+        max-height: 80dvh;
+        display: flex;
+        flex-direction: column;
+        align-content: center;
+        justify-content: center;
+        align-items: center;
     ">
-        <h2>{emoji} {nome}</h2>
-        <p style="font-size:18px; margin:5px;"><b>Status:</b> {titulo}</p>
+        <h2 style="text-align: center">{emoji} {nome}</h2>
+        <p style="font-size:18px;"><b>Status:</b> {titulo}</p>
         <div style="background:#222; border-radius:12px; height:20px; width:100%; margin:10px 0;">
             <div style="background:{cor}; height:20px; width:{int(nivel*100)}%; border-radius:12px;"></div>
         </div>
@@ -46,19 +53,28 @@ def mostrar_skills(skills, titulo, icone):
 hard_skills = {
     "Python": 0.95,
     "SQL": 0.85,
-    "Power BI": 0.8,
-    "Machine Learning": 0.7,
-    "Streamlit": 0.9,
-    "Git/GitHub": 0.85
+    "Power BI": 0.4,
+    "Streamlit": 0.85,
+    "Git/GitHub": 0.85,
+    "Estatística": 0.9,
+    "Inglês": 0.8,
+    "Pacote Office": 0.7,
+    "JavaScript": 0.9,
+    "HTML/CSS": 0.99,
+    "Java": 0.75,
+    "Pandas": 0.95,
 }
 
 soft_skills = {
-    "Comunicação": 0.9,
+    "Comunicação": 0.85,
     "Trabalho em equipe": 0.95,
     "Resolução de problemas": 0.85,
-    "Adaptabilidade": 0.8,
-    "Gestão de tempo": 0.75,
-    "Criatividade": 0.98
+    "Gestão do tempo": 0.8,
+    "Pensamento crítico": 0.95,
+    "Criatividade": 0.75,
+    "Aprendizado contínuo": 0.95,
+    "Capacidade analítica": 0.90,
+    "Flexibilidade": 0.90
 }
 
 # =====================
@@ -66,9 +82,9 @@ soft_skills = {
 # =====================
 st.markdown(
     """
-    <div style="text-align:center; margin-bottom:30px;">
-        <h1>🏎️ Minhas Skills</h1>
-        <p>Soft e Hard Skills acelerando rumo ao título mundial 🏆</p>
+    <div class="titulo">
+        <h1 class="sobre-titulo">🏎️ Minhas Skills</h1>
+        <p class="sobre-subtitulo">Soft e Hard Skills acelerando rumo ao título mundial 🏆</p>
     </div>
     """,
     unsafe_allow_html=True,
