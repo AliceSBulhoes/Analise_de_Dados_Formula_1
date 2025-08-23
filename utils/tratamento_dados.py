@@ -1,6 +1,6 @@
 import pandas as pd
 from datetime import datetime as dt
-from utils.data_frames import *
+from data_frames import *
 
 # Variável global
 EQUIPES_CORES = {
@@ -218,7 +218,9 @@ EQUIPES_CORES = {
     'RB F1 Team': ['#00008B', '#FFFFFF'],  # Azul Escuro e Branco (Red Bull B-team)
 }
 
-
+# ------------------------------
+# Pilotos
+# ------------------------------
 def get_info_pilotos() -> pd.DataFrame:
     """Função para conseguir informações sobre todos os pilotos"""
     df_pilotos = data_frames['drivers']
@@ -235,14 +237,24 @@ def get_info_pilotos() -> pd.DataFrame:
 
     # Renomeando colunas
     colunas = {
-        'constructorId' : 'constructorId',
-        'name' : 'nome_equipe',
-        'nationality' : 'nacionalidade'
+        'driverId' : 'driverId',
+        'number_driver' : 'numero_do_piloto',
+        'code' : 'code',
+        'dob' : 'data_aniversario',
+        'nationality_driver' : 'nacionalidade_piloto',
+        'url_driver' : 'wiki_url_piloto',
+        'idade' : 'idade',
+        'nome_completo' : 'nome_completo'
     }
+
+    df_pilotos = df_pilotos.rename(columns=colunas)
 
     return df_pilotos
 
 
+# ------------------------------
+# Time
+# ------------------------------
 def get_info_time(cores_equipe: dict[list] = EQUIPES_CORES) -> pd.DataFrame:
     """Função para conseguir informações sobre todas as equipes"""
     df_equipes = data_frames['constructors']
@@ -264,5 +276,220 @@ def get_info_time(cores_equipe: dict[list] = EQUIPES_CORES) -> pd.DataFrame:
 
     return df_equipes
 
-# df = get_info_time()
+
+# ------------------------------
+# Tempo de Volta
+# ------------------------------
+def get_lap_time() -> pd.DataFrame:
+    """Função para conseguir informações sobre os tempos de volta"""
+    df_lap_time = data_frames['lap_times']
+
+    # Renomeando colunas
+    colunas = {
+        'raceId' : 'raceId',
+        'driverId' : 'driverId',
+        'lap' : 'lap',
+        'position' : 'posicao',
+        'time' : 'lap_time',
+        'milliseconds' : 'ms_lap_time',
+    }
+
+    df_lap_time = df_lap_time.rename(columns=colunas)
+
+    return df_lap_time
+
+# ------------------------------
+# Status ao Final da Corrida
+# ------------------------------
+def get_status_race() -> pd.DataFrame:
+    """Função para conseguir a informação sobre o status do piloto"""
+    df_status_race = data_frames['status']
+
+    # Renomeando colunas
+    colunas = {
+        'status' : 'status_race'
+    }
+
+    df_status_race = df_status_race.rename(columns=colunas)
+
+    return df_status_race
+
+# -------------------------------------
+# Classificação dos Pilotos no Mundial
+# --------------------------------------
+def get_drivers_standing() -> pd.DataFrame:
+    """Função para conseguir a informação sobre a classificação dos pilotos"""
+    df_drivers_standing = data_frames['driver_standings']
+
+    # Renomeando colunas
+    colunas = {
+        'points' : 'pontos',
+        'position' : 'posicao_mundial',
+        'win' : 'vitorias'
+    }
+
+    df_drivers_standing = df_drivers_standing.rename(columns=colunas)
+
+    return df_drivers_standing
+
+
+# -------------------------------------
+# Temporadas
+# --------------------------------------
+def get_seasons() -> pd.DataFrame:
+    """Função para conseguir a informação sobre as temporadas"""
+    df_seasons = data_frames['seasons']
+
+    # Renomeando colunas
+    colunas = {
+        'year' : 'ano',
+        'url' : 'url_temporada',
+    }
+
+    df_seasons = df_seasons.rename(columns=colunas)
+
+    return df_seasons
+
+
+# -------------------------------------
+# Paradas ou Pit Stops
+# --------------------------------------
+def get_pit_stops() -> pd.DataFrame:
+    """Função para conseguir a informação sobre os PitStops"""
+    df_pit_stops = data_frames['pit_stops']
+
+    # Transformando unidades
+    df_pit_stops['milliseconds'] = (df_pit_stops['milliseconds']) / 1000
+
+    # Renomeando colunas
+    colunas = {
+        'stop' : 'qtd_paradas',
+        'time' : 'time_pit_stop',
+        'duration' : 'duracao_pit_stop',
+        'milliseconds' : 'ms_pit_stop',
+    }
+
+    df_pit_stops = df_pit_stops.rename(columns=colunas)
+
+    return df_pit_stops
+
+
+# -------------------------------------
+# Resultados da Sprint
+# --------------------------------------
+def get_sprints_results() -> pd.DataFrame:
+    """Função para conseguir a informação sobre o resultado das sprints"""
+    df_sprints_results = data_frames['sprint_results']
+
+    # Renomeando colunas
+    colunas = {
+        'number' : 'numero_do_piloto',
+        'grid' : 'posicao_grid',
+        'position' : 'posicao_final',
+        'points' : 'pontoss',
+        'time' : 'tempo_volta',
+        'milliseconds' : 'ms_volta',
+        'fastestLap' : 'volta_rapida',
+        'fastestLapTime' : 'volta_rapida_tempo',
+    }
+
+    df_sprints_results = df_sprints_results.rename(columns=colunas)
+
+    # Tipo
+    df_sprints_results['tipo_corrida'] = 'Sprint'
+
+    return df_sprints_results
+
+
+# -------------------------------------
+# Classificação das Time
+# --------------------------------------
+def get_time_standing() -> pd.DataFrame:
+    """Função para conseguir a informação sobre a classificação dos times"""
+    df_time_standing = data_frames['constructor_standings']
+
+    # Renomeando colunas
+    colunas = {
+        'points' : 'pontos_time',
+        'position' : 'posicao_mundial_time',
+        'wins' : 'vitorias_time',
+    }
+
+    df_time_standing = df_time_standing.rename(columns=colunas)
+
+    return df_time_standing
+
+
+# -------------------------------------
+# Resultados das Corridas
+# --------------------------------------
+def get_race_results() -> pd.DataFrame:
+    """Função para conseguir a informação sobre os resultados das corridas"""
+    df_race_results = data_frames['results']
+    
+    # Remove colunas desnecessárias
+    df_race_results.drop(['rank', 'fastestLapSpeed'], axis=1, inplace=True)
+
+    # Renomeando colunas
+    colunas = {
+        'number_driver_season' : 'numero_do_piloto',
+        'grid' : 'posicao_grid',
+        'position' : 'posicao_final',
+        'points' : 'pontos',
+        'time' : 'tempo_volta',
+        'milliseconds' : 'ms_volta',
+        'fastestLap' : 'volta_rapida',
+        'fastestLapTime' : 'volta_rapida_tempo',
+    }
+
+    df_race_results = df_race_results.rename(columns=colunas)
+
+    # Tipo de Corrida
+    df_race_results['tipo_corrida'] = 'Corrida_Principal'
+
+    return df_race_results
+
+
+# -------------------------------------
+# Circuitos
+# --------------------------------------
+def get_circuits() -> pd.DataFrame:
+    """Função para conseguir a informação sobre os circuitos"""
+    df_circuit = data_frames['circuits']
+    
+    # Remove colunas desnecessárias
+    df_circuit.drop(['circuitRef', 'alt'], axis=1, inplace=True)
+
+    # Renomeando colunas
+    colunas = {
+        'name_circuit' : 'nome_circuito',
+        'location' : 'cidade',
+        'country' : 'pais',
+        'lng' : 'long',
+        'url' : 'url_circuito',
+    }
+
+    df_circuit = df_circuit.rename(columns=colunas)
+
+    return df_circuit
+
+
+# -------------------------------------
+# Qualificação
+# --------------------------------------
+def get_qualifying() -> pd.DataFrame:
+    """Função para conseguir a informação sobre das qualificações"""
+    df_qualifying = data_frames['qualifying']
+
+    # Renomeando colunas
+    colunas = {
+        'number_driver_season' : 'numero_do_piloto',
+        'position' : 'posicao_grid',
+    }
+
+    df_qualifying = df_qualifying.rename(columns=colunas)
+
+    return df_qualifying
+
+# df = get_qualifying()
 # print(df)
