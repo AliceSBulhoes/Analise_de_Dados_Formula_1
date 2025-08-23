@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 # Importando funções auxiliares
 from utils.api_wiki import get_wikipedia_summary
+from utils.tratamento_dados import *
 
 # ------------------------------
 # Variáveis Globais
@@ -55,5 +56,7 @@ def conteudo() -> None:
 
     contexto_conteudo()
 
+
+st.dataframe(get_info_pilotos())
 
 conteudo()
