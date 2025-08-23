@@ -52,11 +52,10 @@ def conteudo() -> None:
         unsafe_allow_html=True,
     )
     
-    contextTab, tratamentoTab, apresentacaoTab, analiseTab, conclusaoTab = st.tabs([":material/contextual_token: Contexto", ":material/healing: Tratamento de Dados", ""])
+    contextTab, tratamentoTab, apresentacaoTab, analiseTab, conclusaoTab = st.tabs([":material/contextual_token: Contexto", ":material/healing: Tratamento", ":material/search_insights: Apresentação", ":material/analytics: Análise", ":material/pin_end: Conclusão"])
+    
+    with contextTab:
+        contexto_conteudo()
 
-    contexto_conteudo()
-
-
-st.dataframe(get_info_pilotos())
 
 conteudo()
