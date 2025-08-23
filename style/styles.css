@@ -43,7 +43,7 @@
     font-family: var(--font-montserrat);
     color: var(--color-white);
     font-weight: 400;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 /* Container do texto */
@@ -57,12 +57,12 @@
     margin-bottom: 1rem;
 }
 
-/* Texto do Header do Navbar [Não Utilizado] */
+/* Texto do Header do Navbar */
 [data-testid="stSidebarNav"] [data-testid="stNavSectionHeader"] {
     font-family: var(--font-montserrat);
     color: var(--color-white);
     font-weight: 800;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: bold;
     text-transform: uppercase;
 }

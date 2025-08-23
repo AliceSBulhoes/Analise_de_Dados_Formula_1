@@ -5,7 +5,6 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 # Importando funções auxiliares
-from utils.tratamento_dados import *
 from utils.api_wiki import get_wikipedia_summary
 
 # ------------------------------
@@ -26,7 +25,7 @@ def contexto_conteudo() -> None:
             """
                 <div class="content">
                     <h2>Contexto</h2>
-                    <div class="contexto">
+                    <div class="text">
                         <p>A <strong>Fórmula 1</strong> é a categoria mais prestigiada do automobilismo mundial. Muitos pilotos sonham em competir nesse nível, mas apenas alguns conseguem transformar esse objetivo em realidade. Dentre esses, poucos alcançam o título de campeão mundial.</p>
                     </div>
                 </div>
@@ -52,6 +51,8 @@ def conteudo() -> None:
         """,
         unsafe_allow_html=True,
     )
+    
+    contextTab, tratamentoTab, apresentacaoTab, analiseTab, conclusaoTab = st.tabs([":material/contextual_token: Contexto", ":material/healing: Tratamento de Dados", ""])
 
     contexto_conteudo()
 

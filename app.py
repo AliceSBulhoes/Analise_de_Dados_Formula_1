@@ -7,17 +7,13 @@ def navbar() -> None:
     st.logo(os.path.abspath("assets/img/formula_1_logo.png"))
 
     # Dicionário com as páginas
-    pages = {
-        "Sobre Mim": [
+    pages =  [
             st.Page("pages/sobre.py", title="Home"),
             st.Page("pages/certificados.py", title="Certificados"),
             st.Page("pages/minhas_skills.py", title="Minhas Skills"),
-        ],
-        "Análise de Dados" : [
             st.Page("pages/analise_de_dados.py", title="Análise de Dados"),
             st.Page("pages/dashboard.py", title="Dashboard"),
-        ]
-    }
+    ]
 
     # Rodando a barra de navegação
     pg = st.navigation(pages)
