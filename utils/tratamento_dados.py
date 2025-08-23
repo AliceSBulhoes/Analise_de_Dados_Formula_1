@@ -218,6 +218,28 @@ EQUIPES_CORES = {
     'RB F1 Team': ['#00008B', '#FFFFFF'],  # Azul Escuro e Branco (Red Bull B-team)
 }
 
+
+def get_info_corrida() -> pd.DataFrame:
+    """Função para conseguir informações sobre todos os pilotos"""
+    df_races = data_frames['races'].copy()
+
+    # Renomeando colunas
+    colunas = {
+        'year' : 'ano',
+        'round' : 'rodada',
+        'name' : 'nome_gp',
+        'date' : 'data_corrida',
+        'time' : 'largada',
+        'url' : 'wiki_url_corrida',
+        'idade' : 'idade',
+        'nome_completo' : 'nome_completo'
+    }
+
+    df_races = df_races.rename(columns=colunas)
+
+    return df_races
+
+
 # ------------------------------
 # Pilotos
 # ------------------------------

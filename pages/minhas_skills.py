@@ -42,8 +42,8 @@ def skill_card(nome, nivel):
 
 def mostrar_skills(skills, titulo, icone):
     st.markdown(f"""
-    <div class="titulo">
-        <h2 class="titulo2">{icone} {titulo}</h2>
+    <div class="conteudo">
+        <h2 class="titulo-2">{icone} {titulo}</h2>
     </div>
     """, unsafe_allow_html=True)
     cols = st.columns(3)

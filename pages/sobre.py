@@ -34,7 +34,7 @@ st.markdown(
         Acredito que cada dia é uma oportunidade de evolução, seja explorando dados ou descobrindo novas histórias.
         </p>
         <p class="text">
-        Minha paixão por <b>Fórmula 1</b> me inspira a enxergar o mundo dos dados de forma estratégica: assim como uma equipe analisa a <i>telemetria</i> para decidir o momento certo de um <i>pit stop</i>,
+        Minha paixão por <b>Formula 1</b> me inspira a enxergar o mundo dos dados de forma estratégica: assim como uma equipe analisa a <i>telemetria</i> para decidir o momento certo de um <i>pit stop</i>,
         acredito que os dados são o <b>combustível essencial</b> para transformar informação em decisão.
         </p>
     </div>
@@ -47,7 +47,7 @@ st.markdown(
 # =====================
 st.markdown("""
            <div class="conteudo">
-                <h2 class="conteudo2">📚 Hobbies</h2>
+                <h2 class="titulo-2">📚 Hobbies</h2>
             </div>
             """, unsafe_allow_html=True)
 
@@ -89,8 +89,8 @@ with st.expander("🎮 Video Games"):
 
         st.caption(random.choice(frases))
 
-with st.expander("🏎️ Fórmula 1"):
-    st.write("A Fórmula 1 é mais do que um esporte: é estratégia, dados e emoção em alta velocidade.")
+with st.expander("🏎️ Formula 1"):
+    st.write("A Formula 1 é mais do que um esporte: é estratégia, dados e emoção em alta velocidade.")
     st.info("⭐ Pilotos que admiro: Lewis Hamilton e Ayrton Senna")
     st.caption("‘No racing, no life.’")
 
@@ -102,7 +102,11 @@ st.divider()
 col1, col2 = st.columns(2)
 with col1:
 
-        st.markdown("<h2>🎲 Curiosidades Aleatórias</h2>", unsafe_allow_html=True)
+        st.markdown("""
+                    <div class="conteudo">
+                        <h2 class="titulo-2">🎲 Curiosidades Aleatórias</h2>
+                    </div>
+                    """, unsafe_allow_html=True)
         if st.button("Me surpreenda! ✨", use_container_width=True):
             curiosidades = [
                 "Já assisti mais de 100 animes e ainda tenho lista pendente infinita 📺",
@@ -119,7 +123,9 @@ with col1:
 with col2:
     st.markdown(
         """
-        <h2>📬 Contato</h2>
+        <div class="conteudo">
+            <h2 class="titulo-2">📬 Contato</h2>
+        </div>
         <p>Adoro conversar sobre <b>dados, tecnologia, Fórmula 1 e cultura pop</b>.</p>
         """,
         unsafe_allow_html=True,
