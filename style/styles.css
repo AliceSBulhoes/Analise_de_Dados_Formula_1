@@ -6,6 +6,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: var(--font-montserrat);
 }
 
 /* Variáveis */
@@ -67,3 +68,45 @@
     text-transform: uppercase;
 }
 
+/* Página Sobre */
+/* Título */
+.titulo .sobre-titulo,.titulo .sobre-subtitulo {
+    text-align: center;
+    font-family: var(--font-montserrat);
+}
+
+.sobre-subtitulo{
+    color: var(--color-gray-200);
+}
+
+/* Frase */
+.caption {
+    font-size: 1.2rem;
+    color: var(--color-gray-200);
+    font-family: var(--font-montserrat);
+}
+
+.titulo .titulo2{
+    font-size: 2.2rem;
+    font-family: var(--font-montserrat);
+    text-transform: uppercase;
+    font-weight: 300;
+}
+
+.paragrafo > .text {
+    text-align: justify;
+    font-size: 1.1rem;
+    font-family: var(--font-montserrat);
+}
+
+.paragrafo > .text b {
+    text-decoration: underline;
+    text-transform: uppercase;
+    font-weight: 800;
+    text-decoration-color: var(--color-red);
+    text-decoration-thickness: 2px;
+}
+
+.paragrafo > .text i {
+    font-weight: 300;
+}

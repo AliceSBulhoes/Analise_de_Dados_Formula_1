@@ -2,16 +2,14 @@ import streamlit as st
 import random
 from datetime import datetime
 
-st.set_page_config(page_title="Portfólio - Alice", page_icon="🚀", layout="wide")
-
 # =====================
 # HEADER
 # =====================
 st.markdown(
     """
-    <div style="text-align:center;">
-        <h1 style="color:#ff4b4b;">🚀 Olá, eu sou a Alice!</h1>
-        <p style="font-size:18px; color:gray;">Apaixonada por dados, Fórmula 1 e mundos imaginários 🌌</p>
+    <div class="titulo">
+        <h1 class="sobre-titulo">👋 Olá, eu sou a Alice!</h1>
+        <p class="sobre-subtitulo">Apaixonada por dados, Fórmula 1 e mundos imaginários</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -24,19 +22,22 @@ st.divider()
 # =====================
 st.markdown(
     """
-    <h2>✨ Sobre Mim</h2>
-    <p style="color:gray; font-size:16px; margin-top:4px;">
-        “Ultimately, every human is their own writer.” — Han Sooyoung
-    </p>
-    <p>
-    Sou a <b>Alice</b>, uma pessoa em constante aprendizado.<br>
-    Acredito que cada dia é uma oportunidade de evolução, seja explorando dados ou descobrindo novas histórias.
-    </p>
-    <p>
-    Minha paixão por <b>Fórmula 1</b> me inspira a enxergar o mundo dos dados de forma estratégica:<br>
-    assim como uma equipe analisa a <i>telemetria</i> para decidir o momento certo de um <i>pit stop</i>,
-    acredito que os dados são o <b>combustível essencial</b> para transformar informação em decisão.
-    </p>
+    <div class="titulo">
+        <h2 class="titulo2">✨ Sobre Mim</h2>
+    </div>
+    <div class="paragrafo">
+        <p class="caption">
+            “Ultimately, every human is their own writer.” — Han Sooyoung
+        </p>
+        <p class="text">
+        Sou a <b>Alice</b>, uma pessoa em constante aprendizado.<br>
+        Acredito que cada dia é uma oportunidade de evolução, seja explorando dados ou descobrindo novas histórias.
+        </p>
+        <p class="text">
+        Minha paixão por <b>Fórmula 1</b> me inspira a enxergar o mundo dos dados de forma estratégica: assim como uma equipe analisa a <i>telemetria</i> para decidir o momento certo de um <i>pit stop</i>,
+        acredito que os dados são o <b>combustível essencial</b> para transformar informação em decisão.
+        </p>
+    </div>
     """,
     unsafe_allow_html=True,
 )
@@ -44,7 +45,11 @@ st.markdown(
 # =====================
 # HOBBIES
 # =====================
-st.markdown("<h2>📚 Hobbies</h2>", unsafe_allow_html=True)
+st.markdown("""
+           <div class="titulo">
+                <h2 class="titulo2">📚 Hobbies</h2>
+            </div>
+            """, unsafe_allow_html=True)
 
 with st.expander("🎬 Anime, Séries e Filmes"):
     st.metric("Títulos assistidos", "150+")
