@@ -15,9 +15,9 @@ TECNOLOGIAS = {
 def mostrar_certificados(certificados):
     st.markdown(
         """
-        <div class="titulo">
-            <h1 class="sobre-titulo">📜 Minha Jornada de Certificados</h1>
-            <p class="sobre-subtitulo">Filtre por tecnologia para ver os cursos relacionados 🚀</p>
+        <div class="conteudo">
+            <h1 class="titulo sobre-titulo">📜 Minha Jornada de Certificados</h1>
+            <p class="subtitulo sobre-subtitulo">Filtre por tecnologia para ver os cursos relacionados 🚀</p>
         </div>
         """,
         unsafe_allow_html=True,

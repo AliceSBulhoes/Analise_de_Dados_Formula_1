@@ -223,7 +223,7 @@ EQUIPES_CORES = {
 # ------------------------------
 def get_info_pilotos() -> pd.DataFrame:
     """Função para conseguir informações sobre todos os pilotos"""
-    df_pilotos = data_frames['drivers']
+    df_pilotos = data_frames['drivers'].copy()
 
     # Calcula idade
     df_pilotos['dob'] = pd.to_datetime(df_pilotos['dob'])
@@ -257,7 +257,7 @@ def get_info_pilotos() -> pd.DataFrame:
 # ------------------------------
 def get_info_time(cores_equipe: dict[list] = EQUIPES_CORES) -> pd.DataFrame:
     """Função para conseguir informações sobre todas as equipes"""
-    df_equipes = data_frames['constructors']
+    df_equipes = data_frames['constructors'].copy()
 
     # Remove colunas desnecessárias
     df_equipes.drop(['constructorRef', 'url_circuit'], axis=1, inplace=True)
@@ -282,7 +282,7 @@ def get_info_time(cores_equipe: dict[list] = EQUIPES_CORES) -> pd.DataFrame:
 # ------------------------------
 def get_lap_time() -> pd.DataFrame:
     """Função para conseguir informações sobre os tempos de volta"""
-    df_lap_time = data_frames['lap_times']
+    df_lap_time = data_frames['lap_times'].copy()
 
     # Renomeando colunas
     colunas = {
@@ -303,7 +303,7 @@ def get_lap_time() -> pd.DataFrame:
 # ------------------------------
 def get_status_race() -> pd.DataFrame:
     """Função para conseguir a informação sobre o status do piloto"""
-    df_status_race = data_frames['status']
+    df_status_race = data_frames['status'].copy()
 
     # Renomeando colunas
     colunas = {
@@ -319,7 +319,7 @@ def get_status_race() -> pd.DataFrame:
 # --------------------------------------
 def get_drivers_standing() -> pd.DataFrame:
     """Função para conseguir a informação sobre a classificação dos pilotos"""
-    df_drivers_standing = data_frames['driver_standings']
+    df_drivers_standing = data_frames['driver_standings'].copy()
 
     # Renomeando colunas
     colunas = {
@@ -338,7 +338,7 @@ def get_drivers_standing() -> pd.DataFrame:
 # --------------------------------------
 def get_seasons() -> pd.DataFrame:
     """Função para conseguir a informação sobre as temporadas"""
-    df_seasons = data_frames['seasons']
+    df_seasons = data_frames['seasons'].copy()
 
     # Renomeando colunas
     colunas = {
@@ -356,7 +356,7 @@ def get_seasons() -> pd.DataFrame:
 # --------------------------------------
 def get_pit_stops() -> pd.DataFrame:
     """Função para conseguir a informação sobre os PitStops"""
-    df_pit_stops = data_frames['pit_stops']
+    df_pit_stops = data_frames['pit_stops'].copy()
 
     # Transformando unidades
     df_pit_stops['milliseconds'] = (df_pit_stops['milliseconds']) / 1000
@@ -379,7 +379,7 @@ def get_pit_stops() -> pd.DataFrame:
 # --------------------------------------
 def get_sprints_results() -> pd.DataFrame:
     """Função para conseguir a informação sobre o resultado das sprints"""
-    df_sprints_results = data_frames['sprint_results']
+    df_sprints_results = data_frames['sprint_results'].copy()
 
     # Renomeando colunas
     colunas = {
@@ -406,7 +406,7 @@ def get_sprints_results() -> pd.DataFrame:
 # --------------------------------------
 def get_time_standing() -> pd.DataFrame:
     """Função para conseguir a informação sobre a classificação dos times"""
-    df_time_standing = data_frames['constructor_standings']
+    df_time_standing = data_frames['constructor_standings'].copy()
 
     # Renomeando colunas
     colunas = {
@@ -425,7 +425,7 @@ def get_time_standing() -> pd.DataFrame:
 # --------------------------------------
 def get_race_results() -> pd.DataFrame:
     """Função para conseguir a informação sobre os resultados das corridas"""
-    df_race_results = data_frames['results']
+    df_race_results = data_frames['results'].copy()
     
     # Remove colunas desnecessárias
     df_race_results.drop(['rank', 'fastestLapSpeed'], axis=1, inplace=True)
@@ -455,7 +455,7 @@ def get_race_results() -> pd.DataFrame:
 # --------------------------------------
 def get_circuits() -> pd.DataFrame:
     """Função para conseguir a informação sobre os circuitos"""
-    df_circuit = data_frames['circuits']
+    df_circuit = data_frames['circuits'].copy()
     
     # Remove colunas desnecessárias
     df_circuit.drop(['circuitRef', 'alt'], axis=1, inplace=True)
@@ -479,7 +479,7 @@ def get_circuits() -> pd.DataFrame:
 # --------------------------------------
 def get_qualifying() -> pd.DataFrame:
     """Função para conseguir a informação sobre das qualificações"""
-    df_qualifying = data_frames['qualifying']
+    df_qualifying = data_frames['qualifying'].copy()
 
     # Renomeando colunas
     colunas = {

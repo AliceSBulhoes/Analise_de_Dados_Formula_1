@@ -7,8 +7,8 @@ from datetime import datetime
 # =====================
 st.markdown(
     """
-    <div class="titulo">
-        <h1 class="sobre-titulo">👋 Olá, eu sou a Alice!</h1>
+    <div class="conteudo">
+        <h1 class="titulo sobre-titulo">👋 Olá, eu sou a Alice!</h1>
         <p class="sobre-subtitulo">Apaixonada por dados, Fórmula 1 e mundos imaginários</p>
     </div>
     """,
@@ -22,8 +22,8 @@ st.divider()
 # =====================
 st.markdown(
     """
-    <div class="titulo">
-        <h2 class="titulo2">✨ Sobre Mim</h2>
+    <div class="conteudo">
+        <h2 class="titulo-2">✨ Sobre Mim</h2>
     </div>
     <div class="paragrafo">
         <p class="caption">
@@ -46,8 +46,8 @@ st.markdown(
 # HOBBIES
 # =====================
 st.markdown("""
-           <div class="titulo">
-                <h2 class="titulo2">📚 Hobbies</h2>
+           <div class="conteudo">
+                <h2 class="conteudo2">📚 Hobbies</h2>
             </div>
             """, unsafe_allow_html=True)
 

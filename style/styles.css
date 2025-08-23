@@ -24,7 +24,7 @@
 }
 
 /* Títulos das Páginas */
-.titulo h1{
+.conteudo h1{
     font-family: var(--font-montserrat);
     color: var(--color-white);
     font-weight: 500;
@@ -71,7 +71,7 @@
 
 /* Sobre Mim Páginas */
 /* Título */
-.titulo .sobre-titulo,.titulo .sobre-subtitulo {
+.conteudo .sobre-titulo,.conteudo .sobre-subtitulo {
     text-align: center;
     font-family: var(--font-montserrat);
 }
@@ -87,7 +87,7 @@
     font-family: var(--font-montserrat);
 }
 
-.titulo .titulo2{
+.conteudo .titulo-2{
     font-size: 2.2rem;
     font-family: var(--font-montserrat);
     text-transform: uppercase;
@@ -96,11 +96,11 @@
 
 .paragrafo > .text {
     text-align: justify;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-family: var(--font-montserrat);
 }
 
-.paragrafo > .text b {
+.paragrafo > .text b, .paragrafo > .text strong {
     text-decoration: underline;
     text-transform: uppercase;
     font-weight: 800;

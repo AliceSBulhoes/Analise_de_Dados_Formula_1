@@ -25,4 +25,3 @@ def get_wikipedia_summary(url: str, lang: str = "en") -> dict:
         }
     else:
         raise Exception(f"Erro {res.status_code} ao acessar {api_url}")
-

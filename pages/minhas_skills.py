@@ -41,7 +41,11 @@ def skill_card(nome, nivel):
     """
 
 def mostrar_skills(skills, titulo, icone):
-    st.markdown(f"## {icone} {titulo}")
+    st.markdown(f"""
+    <div class="titulo">
+        <h2 class="titulo2">{icone} {titulo}</h2>
+    </div>
+    """, unsafe_allow_html=True)
     cols = st.columns(3)
     for i, (skill, nivel) in enumerate(skills.items()):
         with cols[i % 3]:
@@ -82,7 +86,7 @@ soft_skills = {
 # =====================
 st.markdown(
     """
-    <div class="titulo">
+    <div class="conteudo">
         <h1 class="sobre-titulo">🏎️ Minhas Skills</h1>
         <p class="sobre-subtitulo">Soft e Hard Skills acelerando rumo ao título mundial 🏆</p>
     </div>
