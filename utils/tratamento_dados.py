@@ -251,6 +251,11 @@ def get_info_pilotos() -> pd.DataFrame:
     df_pilotos['dob'] = pd.to_datetime(df_pilotos['dob'])
     df_pilotos['idade'] = (dt.today() - df_pilotos['dob']).dt.days // 365
 
+     # Se já tiver nome_completo, não recria
+    if "nome_completo" not in df_pilotos.columns:
+        if "forename" in df_pilotos.columns and "surname" in df_pilotos.columns:
+            df_pilotos["nome_completo"] = df_pilotos["forename"] + " " + df_pilotos["surname"]
+
     # Nome completo
     df_pilotos['nome_completo'] = df_pilotos['forename'] + " " + df_pilotos['surname']
 
