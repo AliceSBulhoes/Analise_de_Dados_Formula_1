@@ -3,6 +3,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import plotly.express as px
+import plotly.graph_objects as go
 # Importando funções auxiliares
 from utils.api_wiki import get_wikipedia_summary
 from utils.get_info import *
@@ -13,7 +16,12 @@ from utils.prepracao_dados import *
 # ------------------------------
 DATA_FRAME = {}
 PILOTO = "Lewis Hamilton"
-    
+
+def get_rgba(color_name, alpha=0.2):
+    """Converte nome de cor ou hex em rgba transparente"""
+    rgb = mcolors.to_rgb(color_name)  # retorna valores entre 0–1
+    return f"rgba({int(rgb[0]*255)},{int(rgb[1]*255)},{int(rgb[2]*255)},{alpha})"
+
 # ------------------------------
 # Contexto
 # ------------------------------
@@ -457,10 +465,96 @@ def classificacao_conteudo() -> None:
 
 
 # ------------------------------
-# Análise Exploratória dos Dados
+# Análise dos Dados
 # ------------------------------
 def analise_conteudo() -> None:
-    """Função para renderizar """
+    """Função para renderizar a análise exploratória"""
+    st.markdown(
+        """
+            <div class="conteudo">
+                <h2 class="titulo-2">Análise dos Dados</h2>]
+                <div class="paragrafo">
+                    <p class="text">
+                        Com o intuito de fazermos uma análise dos dados que possuimos sobre o Lewis Hamilton e sua carreira, o primeiro passo é verificar a sua consistência ao longo das suas temporadas. Vale ressaltar que 
+                    </p>
+                </div>
+                <h3 class="titulo-3">📈 Consistência e Evolução</h2>
+                <div class="paragrafo">
+                    <p class="text">
+                        Aqui analisamos a evolução de Lewis Hamilton ao longo das temporadas,
+                        observando medidas centrais (média, mediana, moda) e também medidas
+                        de dispersão (desvio padrão). Isso nos ajuda a avaliar a regularidade
+                        do piloto em diferentes fases da carreira.
+                    </p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True
+    )
+
+    # Exemplo: calcular métricas por temporada
+    resumo_hamilton = (
+        DATA_FRAME['df_dados_LH']
+        .groupby("ano")["posicao_final"]
+        .agg(["mean","median","std"])
+        .reset_index()
+    )
+
+    # 🔹 Adiciona colunas de equipe e cor
+    resumo_hamilton["time"] = resumo_hamilton["ano"].apply(
+        lambda x: "McLaren" if x <= 2012 else "Mercedes"
+    )
+    resumo_hamilton["cores"] = resumo_hamilton["time"].map({
+        "McLaren": "orange",
+        "Mercedes": "silver"
+    })
+
+    col1, col2 = st.columns([0.3,0.7], vertical_alignment='center')
+
+    with col1:
+        st.dataframe(resumo_hamilton)
+
+    with col2:
+        # Gráfico interativo
+        fig = go.Figure()
+
+        for equipe in resumo_hamilton["time"].unique():
+            df_equipe = resumo_hamilton[resumo_hamilton["time"] == equipe]
+            cor = df_equipe["cores"].iloc[0]
+
+            # Linha da média
+            fig.add_trace(go.Scatter(
+                x=df_equipe["ano"],
+                y=df_equipe["mean"],
+                mode="lines+markers",
+                name=f"Média ({equipe})",
+                line=dict(color=cor, width=3),
+                marker=dict(size=8, color=cor)
+            ))
+
+            # Faixa de desvio padrão com transparência
+            fig.add_trace(go.Scatter(
+                x=pd.concat([df_equipe["ano"], df_equipe["ano"][::-1]]),
+                y=pd.concat([df_equipe["mean"] + df_equipe["std"], 
+                            (df_equipe["mean"] - df_equipe["std"])[::-1]]),
+                fill="toself",
+                fillcolor=get_rgba(cor, 0.2),
+                line=dict(color="rgba(255,255,255,0)"),
+                hoverinfo="skip",
+                name=f"±1 Desvio Padrão ({equipe})"
+            ))
+
+        # Layout
+        fig.update_layout(
+            title="📈 Evolução da Posição Média do Hamilton por Ano",
+            xaxis_title="Ano",
+            yaxis_title="Posição Final (média)",
+            template="plotly_white",
+            hovermode="x unified",
+            legend=dict(bordercolor="gray", borderwidth=0.5)
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
 
 # ------------------------------
 # Renderizando tudo
@@ -495,6 +589,8 @@ def conteudo() -> None:
         preparacao_conteudo()
     with classificacaoTab:
         classificacao_conteudo()
+    with analiseTab:
+        analise_conteudo()
 
 
 conteudo()
