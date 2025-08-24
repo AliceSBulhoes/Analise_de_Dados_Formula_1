@@ -7,6 +7,8 @@ import matplotlib.colors as mcolors
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.stats import gaussian_kde
+from plotly.subplots import make_subplots
+from scipy import stats
 # Importando funções auxiliares
 from utils.api_wiki import get_wikipedia_summary
 from utils.get_info import *
@@ -55,6 +57,87 @@ def get_mapa_cores(df):
 
     return mapa_barras, mapa_linhas
 
+
+def filtrar_periodo_companheiro(df_ham, df_companheiro, nome_companheiro):
+    # filtra apenas o companheiro na Mercedes
+    df_temp = df_companheiro[
+        (df_companheiro['nome_completo'] == nome_companheiro) 
+        & (df_companheiro['nome_equipe'] == 'Mercedes')
+    ]
+    
+    # anos em que esse companheiro REALMENTE estava na Mercedes
+    anos_comuns = df_temp['ano'].unique()
+    
+    # Hamilton apenas nesses anos
+    df_ham_filtrado = df_ham[
+        (df_ham['ano'].isin(anos_comuns)) 
+        & (df_ham['nome_equipe'] == 'Mercedes')
+    ]
+    
+    return df_ham_filtrado, df_temp
+
+
+def filtrar_periodo_russell(df_ham, df_companheiro):
+    """
+    Retorna apenas os anos em que Hamilton e Russell foram companheiros na Mercedes (2022 em diante).
+    """
+    df_russell = df_companheiro[
+        (df_companheiro['nome_completo'] == 'George Russell')
+        & (df_companheiro['nome_equipe'] == 'Mercedes')
+        & (df_companheiro['ano'] >= 2022)  # Russell só entrou em 2022
+    ]
+    
+    anos_validos = df_russell['ano'].unique()
+    
+    df_ham_filtrado = df_ham[
+        (df_ham['ano'].isin(anos_validos))
+        & (df_ham['nome_equipe'] == 'Mercedes')
+    ]
+    
+    return df_ham_filtrado, df_russell
+
+
+def analise_intervalo_confianca(df_ham, df_comp):
+    """Calcula intervalo de confiança e teste t unilateral"""
+    # Remover valores NaN das colunas de posição final
+    ham_positions = df_ham["posicao_final"].dropna()
+    comp_positions = df_comp["posicao_final"].dropna()
+    
+    # Verificar se temos dados suficientes após remover NaN
+    if len(ham_positions) < 2 or len(comp_positions) < 2:
+        return {
+            "media_ham": np.nan, "ic_ham": (np.nan, np.nan),
+            "media_tm": np.nan, "ic_tm": (np.nan, np.nan),
+            "t_stat": np.nan, "p_val": np.nan
+        }
+    
+    # Médias
+    media_ham = ham_positions.mean()
+    media_tm = comp_positions.mean()
+
+    # IC 95% Hamilton
+    sem_ham = stats.sem(ham_positions)
+    ic_ham = stats.t.interval(0.95, len(ham_positions)-1, loc=media_ham, scale=sem_ham)
+
+    # IC 95% Companheiro
+    sem_tm = stats.sem(comp_positions)
+    ic_tm = stats.t.interval(0.95, len(comp_positions)-1, loc=media_tm, scale=sem_tm)
+
+    # Teste t unilateral: Hamilton < Companheiro (melhor posição = menor número)
+    if ham_positions.std() == 0 and comp_positions.std() == 0:
+        t_stat, p_val = np.nan, np.nan
+    else:
+        try:
+            t_stat, p_val = stats.ttest_ind(ham_positions, comp_positions, 
+                                          equal_var=False, alternative='less')
+        except:
+            t_stat, p_val = np.nan, np.nan
+
+    return {
+        "media_ham": media_ham, "ic_ham": ic_ham,
+        "media_tm": media_tm, "ic_tm": ic_tm,
+        "t_stat": t_stat, "p_val": p_val
+    }
 
 # ===============================
 # Gráficos
@@ -219,6 +302,96 @@ def medidas_centrais_grafico(resumo_hamilton: pd.DataFrame) -> None:
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+
+def grafico_boxplot(df_hamilton, df_teammate, teammate_name, teammate_color="blue"):
+    fig = go.Figure()
+    fig.add_trace(go.Box(
+        y=df_hamilton["posicao_final"], 
+        name="Lewis Hamilton", marker=dict(color="gray")
+    ))
+    fig.add_trace(go.Box(
+        y=df_teammate["posicao_final"], 
+        name=teammate_name, marker=dict(color=teammate_color)
+    ))
+
+    fig.update_layout(
+        title=f"Distribuição das Posições: Hamilton vs {teammate_name}",
+        height=400
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def grafico_comparacao_com_ic(df_ham, df_comp, nome_companheiro):
+    """Cria gráfico de linha com intervalos de confiança"""
+    # Agrupar por ano e calcular média e IC
+    ham_por_ano = df_ham.groupby('ano')['posicao_final'].agg(['mean', 'count', 'std']).reset_index()
+    comp_por_ano = df_comp.groupby('ano')['posicao_final'].agg(['mean', 'count', 'std']).reset_index()
+    
+    # Calcular intervalo de confiança para cada ano
+    ham_por_ano['ic_superior'] = ham_por_ano['mean'] + (1.96 * ham_por_ano['std'] / np.sqrt(ham_por_ano['count']))
+    ham_por_ano['ic_inferior'] = ham_por_ano['mean'] - (1.96 * ham_por_ano['std'] / np.sqrt(ham_por_ano['count']))
+    
+    comp_por_ano['ic_superior'] = comp_por_ano['mean'] + (1.96 * comp_por_ano['std'] / np.sqrt(comp_por_ano['count']))
+    comp_por_ano['ic_inferior'] = comp_por_ano['mean'] - (1.96 * comp_por_ano['std'] / np.sqrt(comp_por_ano['count']))
+    
+    # Criar gráfico
+    fig = go.Figure()
+    
+    # Lewis Hamilton - linha principal
+    fig.add_trace(go.Scatter(
+        x=ham_por_ano['ano'],
+        y=ham_por_ano['mean'],
+        mode='lines+markers',
+        name='Lewis Hamilton',
+        line=dict(color="#606060", width=3),
+        marker=dict(size=8, color='#606060')
+    ))
+    
+    # Lewis Hamilton - área do IC
+    fig.add_trace(go.Scatter(
+        x=ham_por_ano['ano'].tolist() + ham_por_ano['ano'].tolist()[::-1],
+        y=ham_por_ano['ic_superior'].tolist() + ham_por_ano['ic_inferior'].tolist()[::-1],
+        fill='toself',
+        fillcolor='rgba(51, 50, 50, 0.44)',
+        line=dict(color='rgba(255,255,255,0)'),
+        name='IC 95% Hamilton',
+        showlegend=True
+    ))
+    
+    # Companheiro - linha principal
+    fig.add_trace(go.Scatter(
+        x=comp_por_ano['ano'],
+        y=comp_por_ano['mean'],
+        mode='lines+markers',
+        name=nome_companheiro,
+        line=dict(color='#00D2BE', width=3),
+        marker=dict(size=8, color='#00D2BE')
+    ))
+    
+    # Companheiro - área do IC
+    fig.add_trace(go.Scatter(
+        x=comp_por_ano['ano'].tolist() + comp_por_ano['ano'].tolist()[::-1],
+        y=comp_por_ano['ic_superior'].tolist() + comp_por_ano['ic_inferior'].tolist()[::-1],
+        fill='toself',
+        fillcolor='rgba(0, 210, 189, 0.44)',
+        line=dict(color='rgba(255,255,255,0)'),
+        name=f'IC 95% {nome_companheiro}',
+        showlegend=True
+    ))
+    
+    # Atualizar layout
+    fig.update_layout(
+        title=f'Comparação de Posições Médias com IC 95%<br>Hamilton vs {nome_companheiro}',
+        xaxis_title='Ano',
+        yaxis_title='Posição Média Final',
+        hovermode='x unified',
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='center', x=0.5),
+        height=500,
+        template='plotly_white'
+    )
+    
+    return fig
 
 
 # ------------------------------
@@ -683,7 +856,24 @@ def analise_conteudo() -> None:
                 <h2 class="titulo-2">Análise dos Dados</h2>
                 <div class="paragrafo">
                     <p class="text">
-                        Com intuito de analisar a carreira de Lewis Hamilton na Formula 1, o primeiro passo será observar sua consistência ao longo das temporadas, avaliando medidas como médias, medianas e desvios-padrão de seus resultados, além de métricas gerais como vitórias, pódios, poles e pontos. Em seguida, a análise será segmentada entre os anos de McLaren e de Mercedes, permitindo comparar a distribuição de seus desempenhos em cada equipe e identificar diferenças estatísticas relevantes. Também será investigado o impacto das mudanças de regulamento, utilizando intervalos de confiança e análise de dispersão para compreender como essas transições afetaram seu rendimento. Por fim, Hamilton será comparado aos seus companheiros de equipe, especialmente na Mercedes, aplicando testes de hipótese para verificar se, em média, seus resultados foram significativamente superiores aos dos colegas de time.
+                        Com intuito de analisar a carreira de <strong>Lewis Hamilton</strong> na <i>Formula 1</i>, 
+                        o primeiro passo será observar sua consistência ao longo das temporadas, 
+                        avaliando medidas como <strong>médias</strong>, <strong>medianas</strong> 
+                        e <strong>desvios-padrão</strong> de seus resultados, 
+                        além de métricas gerais como <i>vitórias</i>, <i>pódios</i>, 
+                        <i>poles</i> e <i>pontos</i>. 
+                    </p>
+                    <p class="text">
+                        Em seguida, a análise será segmentada entre os anos de <strong>McLaren</strong> 
+                        e de <strong>Mercedes</strong>, permitindo comparar a distribuição de seus 
+                        desempenhos em cada equipe. 
+                    </p>
+                    <p class="text">
+                        Por fim, Hamilton será comparado aos seus <strong>companheiros de equipe</strong>, 
+                        especialmente na <strong>Mercedes</strong>, onde além da visualização gráfica 
+                        serão aplicados <i>intervalos de confiança</i> e <i>testes de hipótese</i>, 
+                        a fim de verificar se, em média, seus resultados foram estatisticamente 
+                        superiores aos dos colegas de time. 
                     </p>
                 </div>
                 <hr>
@@ -889,7 +1079,531 @@ def analise_conteudo() -> None:
         unsafe_allow_html=True
     )
 
+    # ------- Comparação -------
 
+    df_companheiro = DATA_FRAME['df_dados_corridas'].copy()
+    df_companheiro = df_companheiro[df_companheiro['nome_equipe'] == 'Mercedes']
+    df_companheiro = df_companheiro[df_companheiro['ano'] >= 2013]
+    df_companheiro = df_companheiro[df_companheiro['code'] != 'HAM'] 
+    df_companheiro['vitorias'] = df_companheiro['posicao_final'] == 1
+
+    lista_companheiros = df_companheiro['nome_completo'].unique()
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <hr>
+                <h3 class="titulo-3">Comparação com Companheiros de Equipe</h3>
+                <div class="paragrafo">
+                    <p class="text">
+                    Para entender melhor o domínio de <strong>Lewis Hamilton</strong>, é essencial compará-lo com seus 
+                    <strong>companheiros de equipe</strong>, especialmente durante sua trajetória na <i>Mercedes</i>. 
+                    </p>
+                    <p class="text">
+                    Nesta análise, será possível selecionar o <strong>companheiro de equipe</strong> desejado e visualizar suas 
+                    <strong>estatísticas de posição final</strong> em termos de <i>média</i>. Também será considerado o 
+                    <strong>intervalo de confiança</strong>, que indica o grau de consistência dos resultados. 
+                    Quanto menor for esse intervalo, maior a regularidade do piloto, já que suas posições tenderam a se concentrar 
+                    dentro dessa faixa, com poucas ocorrências fora dela. 
+                    </p>
+                    <p class="text">
+                    Para aprofundar a comparação, será realizado um <strong>teste de hipótese</strong>, com o objetivo de verificar 
+                    se <strong>Hamilton</strong>, em média, foi estatisticamente superior aos seus <i>companheiros</i> no quesito 
+                    <strong>posição final</strong>. Para isso, aplicaremos o <i>teste de duas médias para populações independentes</i>. 
+                    </p>
+                    <p class="text">
+                    Fique à vontade para escolher qual <strong>companheiro de equipe</strong> deseja analisar e observar como 
+                    as estatísticas se comportam em relação ao desempenho de <strong>Lewis Hamilton</strong>. 
+                    </p>
+                </div>
+            </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    companheiro = st.selectbox("Selecione o Companheiro: ", lista_companheiros)
+
+    # Hamilton (filtrado só Mercedes)
+    df_ham = DATA_FRAME['df_dados_LH'].copy()
+    df_ham = df_ham[df_ham['nome_equipe'] == 'Mercedes']
+
+    # Na seção de comparação com companheiros, substitua a parte do teste por:
+    if companheiro == 'Nico Rosberg':
+
+        boxCol, textCol = st.columns(2, vertical_alignment='center')
+
+        with boxCol:
+            df_ham_filtrado, df_rosberg = filtrar_periodo_companheiro(df_ham, df_companheiro, "Nico Rosberg")
+            grafico_boxplot(df_ham_filtrado, df_rosberg, "Nico Rosberg", teammate_color="#00D2BE")
+        
+        with textCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                            <p class="text">
+                                A famosa rivalidade interna da <strong>Mercedes</strong>, conhecida como <i>"Brocedes"</i>, marcou a época em que 
+                                <strong>Lewis Hamilton</strong> e <strong>Nico Rosberg</strong> foram companheiros de equipe. 
+                                No <i>boxplot</i> ao lado, podemos observar que <strong>Hamilton</strong> apresentou maior consistência, 
+                                já que o tamanho de sua <i>caixa</i> é menor, indicando uma dispersão de resultados mais baixa em comparação a 
+                                <strong>Rosberg</strong>. 
+                            </p>
+                            <p class="text">
+                                Isso sugere que Hamilton esteve com mais frequência entre os <strong>top 3</strong>. A distância interquartil foi de 
+                                <strong>2</strong> para Hamilton e <strong>3</strong> para Rosberg, uma diferença relativamente pequena, mas ainda assim 
+                                significativa, refletindo o alto nível de competitividade e o poder do carro da <strong>Mercedes</strong> naquela época. 
+                            </p>
+                            <p class="text">
+                                Além disso, vale destacar que <strong>Rosberg</strong> apresentou <i>outliers</i> mais elevados que os de Hamilton, 
+                                o que indica que em algumas corridas seu desempenho ficou bem abaixo da média, enquanto Hamilton manteve maior regularidade. 
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        textIcCol, icCol = st.columns(2, vertical_alignment='center')
+
+        with textIcCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                            <p class="text">
+                                Outro jeito de avaliarmos se o que vimos no <i>boxplot</i> se confirma é por meio do 
+                                <strong>intervalo de confiança</strong> das posições finais de cada piloto ao longo das temporadas. 
+                                No gráfico ao lado, observamos que, na maior parte dos anos, <strong>Rosberg</strong> apresentou uma 
+                                <i>média</i> de posição final pior que <strong>Hamilton</strong>. Além disso, o 
+                                <strong>intervalo de confiança</strong> de Rosberg tende a ser mais amplo, indicando maior variação 
+                                de desempenho, enquanto o de Hamilton é mais estreito, refletindo maior consistência. 
+                            </p>
+                            <p class="text">
+                                É importante lembrar que o <strong>intervalo de confiança</strong> de 95% não garante o valor exato 
+                                da média, mas sim a faixa onde há alta probabilidade de o valor real da média populacional se encontrar. 
+                                Ainda assim, a disputa foi bastante equilibrada, especialmente em <strong>2016</strong>, quando a 
+                                rivalidade atingiu seu ápice. 
+                            </p>
+                            <p class="text">
+                                Porém, apenas a análise de intervalos não é suficiente para afirmar com certeza se 
+                                <strong>Hamilton</strong> foi estatisticamente melhor que <strong>Rosberg</strong>. 
+                                Para isso, será necessário aplicar um <strong>teste de hipótese</strong>. 
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        
+        with icCol:
+            # Gráfico de linha com IC
+            fig_line_ic = grafico_comparacao_com_ic(df_ham_filtrado, df_rosberg, "Nico Rosberg")
+            st.plotly_chart(fig_line_ic, use_container_width=True)
+        
+        testHipCol, textTestCol = st.columns([0.48,0.52], vertical_alignment='top')
+
+        with testHipCol:
+            # Teste de hipótese separado
+            resultado = analise_intervalo_confianca(df_ham_filtrado, df_rosberg)
+
+            st.markdown("### 🧪 Teste de Hipótese")
+
+            st.markdown("**H₀ (Hipótese Nula):**")
+            st.latex(r"\mu_{\text{Hamilton}} \geq \mu_{\text{Rosberg}}")
+            st.markdown("> A posição média de **Hamilton** é igual ou **pior** que a do companheiro de equipe.")
+
+            st.markdown("**H₁ (Hipótese Alternativa):**")
+            st.latex(r"\mu_{\text{Hamilton}} < \mu_{\text{Rosberg}}")
+            st.markdown("> A posição média de **Hamilton** é **melhor** que a do companheiro de equipe.")
+
+            # Exibir resultados
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                # Para Lewis Hamilton
+                st.metric(
+                    "Lewis Hamilton", 
+                    f"{resultado['media_ham']:.2f}",
+                    f"IC 95%: [{resultado['ic_ham'][0]:.2f}, {resultado['ic_ham'][1]:.2f}]"
+                )
+            with col2:
+                # Para Nico Rosberg  
+                st.metric(
+                    "Nico Rosberg",
+                    f"{resultado['media_tm']:.2f}",
+                    f"IC 95%: [{resultado['ic_tm'][0]:.2f}, {resultado['ic_tm'][1]:.2f}]"
+                )
+            with col3:
+                st.metric("Diferença", f"{resultado['media_ham'] - resultado['media_tm']:.2f}")
+            
+            st.metric("Valor p", f"{resultado['p_val']:.4f}")
+            if resultado['p_val'] < 0.05:
+                st.success("Diferença estatisticamente significativa (p < 0.05)")
+            else:
+                st.warning("Diferença não estatisticamente significativa (p ≥ 0.05)")
+
+        with textTestCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                            <p class="text">
+                                Ao lado, temos os resultados do <strong>teste de hipótese</strong>, que busca avaliar se a 
+                                <i>média da posição final</i> de <strong>Lewis Hamilton</strong> pode ser considerada 
+                                estatisticamente melhor do que a de <strong>Nico Rosberg</strong>. Para isso, definimos o 
+                                <i>nível de significância</i> em 5% (α = 0,05), ou seja, aceitamos correr um risco de até 5% 
+                                de concluir que Hamilton é melhor quando, na verdade, não seria. 
+                            </p>
+                            <p class="text">
+                                O resultado encontrado foi um <strong>p-valor de 0,0628</strong>. Em termos estatísticos, 
+                                esse valor representa a probabilidade de observarmos uma diferença tão extrema (ou maior) entre 
+                                Hamilton e Rosberg <i>caso a hipótese nula seja verdadeira</i>,  isto é, se não houver realmente 
+                                diferença entre as médias. Como esse valor é <i>maior</i> que o nosso nível de significância de 5%, 
+                                <strong>não podemos rejeitar H₀</strong> com segurança, o que significa que não há evidências 
+                                estatísticas suficientes para afirmar que Hamilton teve, de forma consistente, uma média melhor 
+                                que a de Rosberg.
+                            </p>
+                            <p class="text">
+                                Entretanto, é interessante observar que o p-valor ficou muito próximo do limite adotado. 
+                                Se ampliássemos ligeiramente a significância para 7% (α = 0,07), já seria possível rejeitar H₀, 
+                                indicando que Hamilton teria sim uma vantagem estatisticamente significativa. 
+                                Esse detalhe mostra como a interpretação de testes estatísticos deve ser feita com cuidado: 
+                                a <i>significância estatística</i> não é um valor absoluto e rígido, mas sim um critério 
+                                convencional para reduzir riscos de erro.
+                            </p>
+                            <p class="text">
+                                Por fim, para fins desta análise exploratória, e considerando a proximidade do resultado com o 
+                                limiar de decisão, adotaremos uma interpretação prática: a tendência sugere que Hamilton, de fato, 
+                                apresentou uma média de desempenho superior ao Rosberg. Contudo, destacamos que estatisticamente 
+                                essa conclusão ainda deve ser vista com cautela, pois não houve suporte suficiente ao nível de 
+                                5% de significância. 
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+    # Repetir o mesmo padrão para os outros companheiros
+    elif companheiro == 'Valtteri Bottas':
+        boxCol, textCol = st.columns(2, vertical_alignment='center')
+        
+        with boxCol:          
+            df_ham_filtrado, df_bottas = filtrar_periodo_companheiro(df_ham, df_companheiro, "Valtteri Bottas")
+            grafico_boxplot(df_ham_filtrado, df_bottas, "Valtteri Bottas", teammate_color="#00D2BE")
+        
+        with textCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                           <p class="text">
+                                Após <strong>Nico Rosberg</strong>, foi a vez de <strong>Valtteri Bottas</strong> assumir o posto de 
+                                <strong>companheiro de equipe</strong> de <strong>Lewis Hamilton</strong>. 
+                                Hamilton chegava de uma temporada desafiadora, onde havia perdido o título para <strong>Rosberg</strong>, 
+                                mas, já <i>tricampeão mundial</i> em <strong>2017</strong>, mostrou que a derrota não abalou sua 
+                                <i>consistência</i> dentro da pista. O <i>boxplot</i> ao lado ilustra bem essa diferença: 
+                                enquanto <strong>Bottas</strong> ainda buscava se adaptar à equipe, seus resultados apresentavam 
+                                maior <i>dispersão</i> e valores mais altos, refletindo a dificuldade em manter o mesmo nível de 
+                                <i>regularidade</i>. 
+                                <strong>Hamilton</strong>, por outro lado, manteve uma <i>caixa</i> menor e mais baixa, sinal de que 
+                                continuava entregando desempenhos sólidos e constantemente em posições de destaque. 
+                                A <i>amplitude interquartil</i> reforça essa leitura: <strong>2</strong> para <strong>Hamilton</strong> 
+                                contra <strong>3</strong> para <strong>Bottas</strong>, um indicativo claro de que os resultados do britânico 
+                                oscilaram menos. 
+                                Além disso, <strong>Bottas</strong> apresentou <i>outliers</i> mais elevados, representando provas em que seu 
+                                desempenho caiu de forma significativa, algo menos frequente em <strong>Hamilton</strong>. 
+                                Esses elementos, quando observados em conjunto, deixam evidente que <strong>Bottas</strong> teve um início de 
+                                trajetória bem mais turbulento ao lado de um companheiro já consolidado no topo do <i>grid</i>.
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+       
+        textIcCol, icCol = st.columns(2, vertical_alignment='center')
+
+        with textIcCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                            <p class="text">
+                                Mas apenas o <i>boxplot</i> não é suficiente para afirmar se <strong>Lewis Hamilton</strong> realmente foi superior a 
+                                <strong>Valtteri Bottas</strong> no quesito <strong>posição final</strong>. 
+                                Para aprofundar a análise, foi feita uma <i>comparação de médias</i> acompanhada de seus respectivos 
+                                <strong>intervalos de confiança</strong>, que permitem avaliar não apenas a posição média, mas também a 
+                                <i>consistência</i> de cada piloto ao longo das temporadas. 
+                                Ao lado, observamos que ambos começaram próximos, mas com o passar dos anos o <strong>intervalo de confiança</strong> 
+                                de <strong>Bottas</strong> se tornou cada vez maior, refletindo uma <i>dispersão</i> crescente nos resultados, enquanto o de 
+                                <strong>Hamilton</strong> se manteve relativamente estável, com sua média consistentemente menor que a de Bottas. 
+                                Esse aumento de variabilidade, especialmente nos dois últimos anos, sugere que o <i>carro</i> da equipe já não estava 
+                                tão dominante quanto antes. Ainda assim, <strong>Hamilton</strong> conseguiu manter sua <i>regularidade</i>, evidenciando que 
+                                mesmo em condições menos favoráveis ele permanecia competitivo. 
+                                Se o carro tivesse continuado extremamente dominante, esperaríamos ver ambos os pilotos sustentando médias mais baixas 
+                                de posição final, como na época da dupla <strong>Hamilton–Rosberg</strong>. 
+                                Diante disso, torna-se necessário aplicar um <strong>teste de hipótese</strong> a um nível de significância de 
+                                <strong>5%</strong>, a fim de verificar estatisticamente se a vantagem de <strong>Hamilton</strong> sobre 
+                                <strong>Bottas</strong> é de fato significativa. 
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with icCol:
+            # Gráfico de linha com IC
+            fig_line_ic = grafico_comparacao_com_ic(df_ham_filtrado, df_bottas, "Valtteri Bottas")
+            st.plotly_chart(fig_line_ic, use_container_width=True)
+        
+        testHipCol, textTestCol = st.columns([0.48,0.52], vertical_alignment='top')
+
+        with testHipCol:
+
+            # Teste de hipótese
+            resultado = analise_intervalo_confianca(df_ham_filtrado, df_bottas)
+            
+            st.markdown("### 🧪 Teste de Hipótese")
+
+            st.markdown("**H₀ (Hipótese Nula):**")
+            st.latex(r"\mu_{\text{Hamilton}} \geq \mu_{\text{Bottas}}")
+            st.markdown("> A posição média de **Hamilton** é igual ou **pior** que a do companheiro de equipe.")
+
+            st.markdown("**H₁ (Hipótese Alternativa):**")
+            st.latex(r"\mu_{\text{Hamilton}} < \mu_{\text{Bottas}}")
+            st.markdown("> A posição média de **Hamilton** é **melhor** que a do companheiro de equipe.")
+
+            # Exibir resultados
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                # Para Lewis Hamilton
+                st.metric(
+                    "Lewis Hamilton", 
+                    f"{resultado['media_ham']:.2f}",
+                    f"IC 95%: [{resultado['ic_ham'][0]:.2f}, {resultado['ic_ham'][1]:.2f}]"
+                )
+            with col2:
+                # Para Valtteri Bottas  
+                st.metric(
+                    "Valtteri Bottas",
+                    f"{resultado['media_tm']:.2f}",
+                    f"IC 95%: [{resultado['ic_tm'][0]:.2f}, {resultado['ic_tm'][1]:.2f}]"
+                )
+            with col3:
+                st.metric("Diferença", f"{resultado['media_ham'] - resultado['media_tm']:.2f}")
+            
+            st.metric("Valor p", f"{resultado['p_val']:.4f}")
+            if resultado['p_val'] < 0.05:
+                st.success("Diferença estatisticamente significativa (p < 0.05)")
+            else:
+                st.warning("Diferença não estatisticamente significativa (p ≥ 0.05)")
+
+        with textTestCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                            <p class="text">
+                                Ao lado, temos os resultados do <strong>teste de hipótese</strong> que compara a 
+                                <i>média da posição final</i> de <strong>Lewis Hamilton</strong> com a de 
+                                <strong>Valtteri Bottas</strong>. Novamente, adotamos um <i>nível de significância</i> 
+                                de 5% (α = 0,05), o que significa aceitar um risco de até 5% de concluir que Hamilton 
+                                é melhor quando, na realidade, não seria. 
+                            </p>
+                            <p class="text">
+                                O resultado obtido foi um <strong>p-valor de 0,0003</strong>. Esse valor é extremamente 
+                                baixo e indica que a probabilidade de observarmos uma diferença tão acentuada entre os 
+                                dois pilotos <i>caso a hipótese nula fosse verdadeira</i> é de apenas 0,03%. 
+                                Em termos estatísticos, isso representa uma evidência <strong>fortíssima</strong> contra H₀. 
+                            </p>
+                            <p class="text">
+                                Como o <strong>p-valor</strong> é muito menor que o nosso nível de significância (0,0003 &lt; 0,05), 
+                                <strong>rejeitamos H₀ com segurança</strong> e concluímos que <strong>Lewis Hamilton</strong> 
+                                teve, de forma consistente, uma <i>média de posição final</i> melhor do que a de 
+                                <strong>Valtteri Bottas</strong>. 
+                            </p>
+                            <p class="text">
+                                Diferente do caso de <strong>Nico Rosberg</strong>, onde o resultado ficou na fronteira da decisão, 
+                                aqui não há margem para dúvida: a evidência estatística é clara e robusta. 
+                                Isso reforça a interpretação feita nos <i>boxplots</i> e nos <strong>intervalos de confiança</strong>, 
+                                de que <strong>Hamilton</strong> manteve sua regularidade e dominância em relação ao seu 
+                                companheiro de equipe ao longo dos anos. 
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+    elif companheiro == 'George Russell':
+        boxCol, textCol = st.columns(2, vertical_alignment='center')
+
+        with boxCol:          
+            df_ham_filtrado, df_russell = filtrar_periodo_russell(df_ham, df_companheiro)
+            grafico_boxplot(df_ham_filtrado, df_russell, "George Russell", teammate_color="#6CD3BF")
+
+        with textCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                            <p class="text">
+                                O <i>boxplot</i> comparativo entre <strong>Lewis Hamilton</strong> e <strong>George Russell</strong> 
+                                evidencia diferenças relevantes no comportamento de seus resultados desde que passaram a ser companheiros 
+                                de equipe. A <i>caixa</i> de <strong>Russell</strong> é visivelmente menor, o que indica uma 
+                                <strong>maior consistência</strong> em suas posições finais. Isso mostra que, mesmo sem liderar 
+                                constantemente sobre Hamilton, Russell manteve desempenhos próximos entre si, com pouca variação. 
+                            </p>
+                            <p class="text">
+                                Já <strong>Hamilton</strong>, embora em várias ocasiões tenha alcançado médias mais favoráveis, 
+                                apresentou maior dispersão, alternando entre corridas de alto desempenho e outras aquém do esperado. 
+                                Em resumo, Hamilton alcança picos mais altos, enquanto Russell se destaca pela estabilidade. 
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        textIcCol, icCol = st.columns([0.4,0.6], vertical_alignment='center')
+
+        with textIcCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                            <p class="text">
+                                A análise das <strong>médias com intervalo de confiança de 95%</strong> reforça o equilíbrio entre os dois pilotos. 
+                                Curiosamente, <strong>Hamilton</strong> aparece com resultados médios ligeiramente piores em relação a <strong>Russell</strong>, 
+                                terminando em posições finais um pouco mais altas. Esse comportamento pode refletir o impacto das mudanças de regulamento, 
+                                que exigiram maior adaptação de Hamilton, enquanto Russell pareceu ajustar-se de forma mais natural. 
+                            </p>
+                            <p class="text">
+                                Nos <strong>intervalos de confiança</strong>, observa-se que Hamilton mantém uma amplitude relativamente menor, 
+                                sinalizando maior controle em seus desempenhos, enquanto Russell se destaca pela consistência ao longo das temporadas, 
+                                reforçando sua rápida adaptação e a disputa interna pelo posto de <i>primeiro piloto</i> da Mercedes. 
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with icCol:
+            fig_line_ic = grafico_comparacao_com_ic(df_ham_filtrado, df_russell, "George Russell")
+            st.plotly_chart(fig_line_ic, use_container_width=True)
+
+        testHipCol, textTestCol = st.columns([0.48,0.52], vertical_alignment='top')
+
+        with testHipCol:
+
+            resultado = analise_intervalo_confianca(df_ham_filtrado, df_russell)
+            
+            st.markdown("### 🧪 Teste de Hipótese")
+
+            st.markdown("**H₀ (Hipótese Nula):**")
+            st.latex(r"\mu_{\text{Hamilton}} \geq \mu_{\text{Russell}}")
+            st.markdown("> A posição média de **Hamilton** é igual ou **pior** que a do companheiro de equipe.")
+
+            st.markdown("**H₁ (Hipótese Alternativa):**")
+            st.latex(r"\mu_{\text{Hamilton}} < \mu_{\text{Russell}}")
+            st.markdown("> A posição média de **Hamilton** é **melhor** que a do companheiro de equipe.")
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric(
+                    "Lewis Hamilton", 
+                    f"{resultado['media_ham']:.2f}",
+                    f"IC 95%: [{resultado['ic_ham'][0]:.2f}, {resultado['ic_ham'][1]:.2f}]"
+                )
+            with col2:
+                st.metric(
+                    "George Russell",
+                    f"{resultado['media_tm']:.2f}",
+                    f"IC 95%: [{resultado['ic_tm'][0]:.2f}, {resultado['ic_tm'][1]:.2f}]"
+                )
+            with col3:
+                st.metric("Diferença", f"{resultado['media_ham'] - resultado['media_tm']:.2f}")
+            
+            st.metric("Valor p", f"{resultado['p_val']:.4f}")
+            if resultado['p_val'] < 0.05:
+                st.success("Diferença estatisticamente significativa (p < 0.05)")
+            else:
+                st.warning("Diferença não estatisticamente significativa (p ≥ 0.05)")
+
+        with textTestCol:
+            st.markdown(
+                """
+                    <div class="conteudo">
+                        <div class="paragrafo">
+                            <p class="text">
+                                Para avaliar de forma objetiva se a diferença entre os desempenhos médios de <strong>Hamilton</strong> 
+                                e <strong>Russell</strong> é estatisticamente significativa, foi realizado um <strong>teste de hipótese</strong> 
+                                com nível de significância de 5% (α = 0,05). 
+                            </p>
+                            <p class="text">
+                                O resultado encontrado foi um <strong>p-valor de 0,6255</strong>. Esse valor, muito acima do limite de 5%, 
+                                mostra que <i>não podemos rejeitar a hipótese nula (H₀)</i>. Na prática, significa que não há evidências suficientes 
+                                para afirmar que Hamilton apresenta, em média, um desempenho superior ao de Russell. 
+                            </p>
+                            <p class="text">
+                                O p-valor elevado sugere que as diferenças observadas podem ser atribuídas a <strong>variações aleatórias</strong> 
+                                de corrida para corrida, e não a uma vantagem estatisticamente clara de um piloto sobre o outro. 
+                            </p>
+                            <p class="text">
+                                Portanto, embora os gráficos indiquem nuances interessantes, Hamilton com médias um pouco melhores 
+                                e Russell com maior consistência, a análise estatística confirma que tais distinções não atingem 
+                                <strong>significância estatística</strong>, devendo ser interpretadas com cautela. 
+                            </p>
+                        </div>
+                    </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <div class="paragrafo">
+                    <p class="text">
+                        Em resumo, a análise comparativa entre Hamilton e seus companheiros de equipe evidencia um padrão claro: mesmo em contextos distintos de regulamento e competitividade do carro, Hamilton mostrou uma consistência estatística superior, com médias geralmente melhores ou pelo menos tão boas quanto as de seus pares. Bottas aparece como o adversário em que a diferença foi mais nítida, enquanto contra Rosberg e Russell a disputa se mostrou mais equilibrada, refletindo momentos de adaptação ou maior competitividade interna. Esses resultados reforçam que, apesar das variações, Hamilton manteve um desempenho sólido e competitivo em diferentes fases da sua
+                    </p>
+                </div>
+                <hr>
+            </div>
+        """, unsafe_allow_html=True
+    )
+
+
+# ------------------------------
+# Conclusão
+# ------------------------------
+def conclusao_conteudo() -> None:
+    """Função Renderiza a conclusão"""
+    st.markdown(
+        """
+            <div class="conteudo">
+                <h2 class="titulo-2">Conclusão</h2>
+                <div class="paragrafo">
+                    <p class="text">
+                        As métricas médias de <strong>Lewis Hamilton</strong> revelam um piloto que se manteve quase sempre entre as primeiras posições, com alto nível de consistência ao longo das temporadas (1). Seu desempenho apresentou uma trajetória de evolução contínua, principalmente nos primeiros anos de carreira, alcançando o auge entre 2014 e 2020; no entanto, mais recentemente, houve sinais de queda relacionados às condições técnicas, embora ele siga em patamar competitivo (2). As mudanças de regulamento tiveram impacto direto, sobretudo após 2022, resultando em quedas perceptíveis no rendimento médio, o que demonstra o peso das alterações técnicas sobre seu desempenho (3).
+                    </p>
+                    <p class="text">
+                        Quando comparado aos seus companheiros de equipe, Hamilton mostrou-se superior a <strong>Bottas</strong> em constância, disputou de forma mais equilibrada com <strong>Rosberg</strong> e, mais recente, enfrentou uma rivalidade crescente com <strong>Russell</strong>, mas ainda preserva vantagens importantes em termos de regularidade e controle (4). O período entre 2014 e 2020 pode ser classificado como de <i>dominância clara</i>, em que a superioridade da Mercedes desempenhou papel central; ainda assim, a forma como Hamilton converteu essa vantagem em títulos e recordes reforça que a dominância foi também fruto de sua habilidade individual (5).
+                    </p>
+                    <p class="text">
+                        Assim, a análise evidencia que Hamilton construiu uma carreira marcada por consistência, capacidade de evolução e adaptação a diferentes cenários, confirmando-se como um dos pilotos mais dominantes da <strong>Formula 1</strong>, mesmo diante das oscilações mais recentes. Ainda assim, seria necessário aprofundar a investigação em métricas como <strong>vitórias</strong>, <strong>pódios</strong> e <strong>pole positions</strong> para enriquecer a compreensão completa do seu impacto competitivo.
+                    </p>
+                </div>
+                <hr>
+            </div>
+        """, unsafe_allow_html=True
+    )
 
 
 
@@ -928,6 +1642,8 @@ def conteudo() -> None:
         classificacao_conteudo()
     with analiseTab:
         analise_conteudo()
+    with conclusaoTab:
+        conclusao_conteudo()
 
 
 conteudo()
