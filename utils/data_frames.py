@@ -19,7 +19,7 @@ def carregar_dados() -> dict:
     
     for f in files:
         nome = os.path.splitext(os.path.basename(f))[0]
-        df = pd.read_csv(f, sep=',')
+        df = pd.read_csv(f, sep=',', na_values="\\N")
         dicf[nome] = df
     
     # print("DataFrames carregados:", list(dicf.keys()))

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import plotly.express as px
 import plotly.graph_objects as go
+from scipy.stats import gaussian_kde
 # Importando funções auxiliares
 from utils.api_wiki import get_wikipedia_summary
 from utils.get_info import *
@@ -16,11 +17,209 @@ from utils.prepracao_dados import *
 # ------------------------------
 DATA_FRAME = {}
 PILOTO = "Lewis Hamilton"
+REGULAMENTOS = [2014, 2022]
 
+
+# ------------------------------
+# Função Utilitária
+# ------------------------------
 def get_rgba(color_name, alpha=0.2):
     """Converte nome de cor ou hex em rgba transparente"""
     rgb = mcolors.to_rgb(color_name)  # retorna valores entre 0–1
     return f"rgba({int(rgb[0]*255)},{int(rgb[1]*255)},{int(rgb[2]*255)},{alpha})"
+
+
+def get_mapa_cores(df):
+    # Garantir que "cores" vire tupla (para ser hashable)
+    df_tmp = df.copy()
+    df_tmp["cores"] = df_tmp["cores"].apply(
+        lambda x: tuple(x) if isinstance(x, list) else (x,)
+    )
+
+    # Criar dicionários
+    mapa_barras = (
+        df_tmp[["nome_equipe", "cores"]]
+        .drop_duplicates()
+        .set_index("nome_equipe")["cores"]
+        .apply(lambda x: x[0] if len(x) > 0 else "#808080")
+        .to_dict()
+    )
+
+    mapa_linhas = (
+        df_tmp[["nome_equipe", "cores"]]
+        .drop_duplicates()
+        .set_index("nome_equipe")["cores"]
+        .apply(lambda x: x[1] if len(x) > 1 else "#000000")
+        .to_dict()
+    )
+
+    return mapa_barras, mapa_linhas
+
+
+# ===============================
+# Gráficos
+# ===============================
+def grafico_densidade_interativo(df):
+    import plotly.graph_objects as go
+    import numpy as np
+    from scipy.stats import gaussian_kde
+    import streamlit as st
+
+    # Se "cores" for lista, pega a primeira cor
+    df = df.copy()
+    df["cores"] = df["cores"].apply(lambda x: x[0] if isinstance(x, list) else x)
+
+    fig = go.Figure()
+
+    for equipe, grupo in df.groupby("nome_equipe"):
+        valores = grupo["posicao_final"].dropna()
+        if len(valores) == 0:
+            continue
+
+        x_vals = np.linspace(valores.min(), valores.max(), 200)
+        kde = gaussian_kde(valores)
+        densidade = kde(x_vals)
+
+        cor = grupo["cores"].iloc[0]
+
+        # =======================
+        # Curva de densidade
+        # =======================
+        fig.add_trace(go.Scatter(
+            x=x_vals,
+            y=densidade,
+            mode="lines",
+            line=dict(color=cor, width=2),
+            name=f"Densidade {equipe}"
+        ))
+
+        # =======================
+        # Estatísticas
+        # =======================
+        media = valores.mean()
+        mediana = np.median(valores)
+        moda_idx = np.argmax(densidade)  # índice do pico da curva
+        moda = x_vals[moda_idx]
+
+        # Linha da média
+        fig.add_vline(
+            x=media,
+            line=dict(color=cor, dash="dot", width=1.5),
+            annotation_text=f"Média: {media:.1f}",
+            annotation_position="top"
+        )
+
+
+        # Linha da moda (pico KDE)
+        fig.add_vline(
+            x=moda,
+            line=dict(color=cor, dash="dash", width=1.5),
+            annotation_text=f"Pico: {moda:.1f}",
+            annotation_position="bottom"
+        )
+
+    # =======================
+    # Layout final
+    # =======================
+    fig.update_layout(
+        title="Distribuição de Posições por Equipe",
+        xaxis_title="Posição Final",
+        yaxis_title="Densidade",
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.2,
+            xanchor="center",
+            x=0.5
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def medidas_centrais_grafico(resumo_hamilton: pd.DataFrame) -> None:
+    fig = go.Figure()
+
+    # Reusar os mapas de cor
+    mapa_barras, mapa_linhas = get_mapa_cores(DATA_FRAME['df_dados_LH'])
+
+    for equipe in resumo_hamilton["nome_equipe"].unique():
+        df_equipe = resumo_hamilton[resumo_hamilton["nome_equipe"] == equipe]
+        cor = mapa_barras.get(equipe, "#808080")  # cor principal
+
+        # Linha da média
+        fig.add_trace(go.Scatter(
+            x=df_equipe["ano"],
+            y=df_equipe["mean"],
+            mode="lines+markers",
+            name=f"Média",
+            line=dict(color=cor, width=3),
+            marker=dict(size=8, color=cor)
+        ))
+
+        # Linha da mediana (tracejada)
+        fig.add_trace(go.Scatter(
+            x=df_equipe["ano"],
+            y=df_equipe["median"],
+            mode="lines+markers",
+            name=f"Mediana",
+            line=dict(color=cor, width=2, dash="dot"),
+            marker=dict(symbol="diamond", size=7, color=cor)
+        ))
+
+        # Faixa de desvio padrão com transparência
+        fig.add_trace(go.Scatter(
+            x=pd.concat([df_equipe["ano"], df_equipe["ano"][::-1]]),
+            y=pd.concat([df_equipe["mean"] + df_equipe["std"], 
+                        (df_equipe["mean"] - df_equipe["std"])[::-1]]),
+            fill="toself",
+            fillcolor=get_rgba(cor, 0.2),
+            line=dict(color="rgba(255,255,255,0)"),
+            hoverinfo="skip",
+            name=f"±1 Desvio Padrão ({equipe})"
+        ))
+
+    # ===============================
+    # Linhas dos regulamentos da F1
+    # ===============================
+    regulamentos = {
+        2009: "Mudança Aerodinâmica",
+        2014: "Era Híbrida",
+        2017: "Carros Largos",
+        2022: "Efeito Solo"
+    }
+
+    for ano, desc in regulamentos.items():
+        fig.add_vline(
+            x=ano,
+            line=dict(color="white", dash="dash"),
+            annotation=dict(
+                text=f"{ano}\n{desc}",
+                showarrow=False,
+                yanchor="bottom",
+                xanchor="left",
+                font=dict(size=10, color="white")
+            )
+        )
+
+    # Layout
+    fig.update_layout(
+        title="📈 Evolução da Posição Média e Mediana do Hamilton por Ano",
+        xaxis_title="Ano",
+        yaxis_title="Posição Final",
+        template="plotly_white",
+        hovermode="x unified",
+        legend=dict(
+            orientation="h",   # horizontal
+            yanchor="top",     # ancorar no topo
+            y=-0.2,            # jogar pra baixo do gráfico
+            xanchor="center",  # centralizar
+            x=0.5
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
 
 # ------------------------------
 # Contexto
@@ -251,9 +450,7 @@ def preparacao_conteudo() -> None:
                         <i>Status</i>, <i>Equipes</i> e <i>Pilotos</i>. 
                         Além disso, acrescentamos a coluna <i>"ganho_posicao"</i>, que indica 
                         quantas posições o piloto conquistou ao longo da prova em relação ao grid de largada. <br><br>
-                        Já a tabela <strong>Lewis Hamilton Resultados</strong> mantém a mesma estrutura, 
-                        mas adiciona a coluna <i>"vitorias"</i>, permitindo identificar 
-                        quantas vezes o piloto terminou em primeiro lugar. Essa métrica é fundamental 
+                        Já a tabela Lewis Hamilton Resultados mantém a mesma estrutura, mas inclui novas colunas: "vitorias", indicando quantas vezes o piloto terminou em primeiro lugar; "podios", registrando as ocasiões em que ficou entre os três primeiros; e "pole_position", que mostra quantas vezes conquistou a primeira posição no grid de largada durante a qualificação. Essa métrica é fundamental 
                         para compreender sua performance ao longo da carreira, já que a vitória 
                         é um dos principais indicadores de domínio na Formula 1. <br><br>
                         Com essas informações, o próximo passo é verificar se existem valores nulos, 
@@ -300,26 +497,36 @@ def preparacao_conteudo() -> None:
             <div class="conteudo">
                 <div class="paragrafo">
                     <p class="text">
-                        A análise dos valores nulos mostra que as colunas <i>"ganho_posicao"</i> e 
-                        <i>"posicao_final"</i> apresentam a mesma quantidade de registros ausentes. 
-                        Isso pode parecer uma coincidência à primeira vista, mas faz sentido dentro 
-                        do contexto da Formula 1.                  
-                        Nem todos os pilotos concluem a corrida: acidentes, falhas mecânicas ou 
-                        outros problemas podem levar ao <strong>DNF (Did Not Finish)</strong>. 
-                        Nesses casos, a ausência de informação não representa uma inconsistência, 
-                        mas sim o reflexo da realidade da prova. <br><br>
-                        Portanto, podemos considerar que a base de dados já passou por um tratamento 
-                        inicial adequado.
-                        Entretanto, antes de prosseguir, é fundamental verificar se ainda existem 
-                        <strong>linhas duplicadas</strong>, garantindo que nossa análise não seja 
-                        enviesada por registros repetidos.
+                        A análise dos valores ausentes revela que as colunas 
+                        <i>"ganho_posicao"</i> e <i>"posicao_final"</i> apresentam 
+                        exatamente a mesma quantidade de registros nulos. 
+                        Isso não é coincidência: na Formula 1, quando um piloto 
+                        <strong>não conclui a corrida (DNF - Did Not Finish)</strong>, 
+                        não há como registrar sua posição final ou o ganho de posições. 
+                        Assim, a ausência desses dados reflete a realidade das provas, 
+                        e não uma falha no conjunto.
+                        <br><br>
+                        O mesmo padrão ocorre com as colunas 
+                        <i>"tempo_volta_ultima"</i> e <i>"ms_volta_ultima"</i>. 
+                        Elas ficam em branco justamente quando Hamilton abandona a corrida 
+                        ou termina com <strong>+1 volta</strong> em relação ao líder, 
+                        situação em que não existe um tempo válido de última volta. 
+                        Já os campos <i>"volta_rapida"</i> e <i>"volta_rapida_tempo"</i> 
+                        só aparecem nulos em casos em que o piloto não completou nenhuma volta, 
+                        como no GP da Espanha de 2016, quando um acidente com seu companheiro 
+                        de equipe, Nico Rosberg, causou seu abandono logo na primeira curva.
+                        <br><br>
+                        Portanto, os valores nulos estão diretamente associados 
+                        às condições reais das corridas e não comprometem a integridade da base. 
+                        Antes de avançar, entretanto, é essencial verificar a existência 
+                        de <strong>linhas duplicadas</strong>, evitando que registros 
+                        repetidos distorçam nossa análise.
                     </p>
                 </div>
             </div>
         """,
         unsafe_allow_html=True,
     )
-
 
 
     # ------ Duplicatas ------
@@ -361,12 +568,11 @@ def preparacao_conteudo() -> None:
             <div class="conteudo">
                 <div class="paragrafo">
                     <p class="text">
-                        A verificação de duplicatas mostra que não há registros repetidos nos DataFrames. 
-                        Esse resultado confirma que o processo de preparação inicial dos dados foi consistente, 
-                        garantindo maior confiabilidade para as próximas etapas.
-                        Com essa base validada, podemos avançar para a 
-                        <strong>classificação das variáveis</strong> e a definição das visualizações 
-                        mais adequadas para a análise.
+                        A verificação mostra que não há registros duplicados nos DataFrames, 
+                        o que reforça a consistência do tratamento inicial realizado. 
+                        Com uma base confiável e livre de ruídos, podemos avançar para a 
+                        <strong>classificação das variáveis</strong> e a escolha das 
+                        visualizações mais adequadas para extrair insights relevantes.
                     </p>
                 </div>
             </div>
@@ -428,7 +634,9 @@ def classificacao_conteudo() -> None:
         ("laps", "Quantitativa Discreta", "Número de voltas completadas. É uma contagem natural (1, 2, 3...)."),
         ("pontos", "Quantitativa Discreta", "Pontos obtidos segundo regulamento. Valores definidos e inteiros."),
         ("ganho_posicao", "Quantitativa Discreta", "Diferença entre posições de largada e chegada. Valor inteiro (positivo ou negativo)."),
-        ("vitorias", "Quantitativa Discreta", "Um booleano em 0/1 representa se Hamilton venceu (1) ou não venceu (0) uma corrida. É considerado quantitativa discreta por assumir apenas dois valores inteiros possíveis e permitir cálculos estatísticos, como soma e média."),
+        ("vitorias", "Quantitativa Discreta", "Um booleano em 0/1 representa se Hamilton venceu (1) ou não (0) uma corrida. É considerado quantitativa discreta por assumir apenas dois valores inteiros possíveis e permitir cálculos estatísticos."),
+        ("podios", "Quantitativa Discreta", "Um booleano em 0/1 representa se Hamilton ficou no pódio (1) ou não (0) em uma corrida. É considerado quantitativa discreta por assumir apenas dois valores inteiros possíveis e permitir cálculos estatísticos."),
+        ("pole_position", "Quantitativa Discreta", "Um booleano em 0/1 representa se Hamilton pegou a primeira posição do grid d largada (1) ou não (0) em uma corrida. É considerado quantitativa discreta por assumir apenas dois valores inteiros possíveis e permitir cálculos estatísticos."),
         ("rodada", "Quantitativa Discreta", "Contagem dos GP's de um ano. É uma variável de contagem inteira"),
 
         # Variáveis Quantitativas Contínuas 
@@ -472,88 +680,217 @@ def analise_conteudo() -> None:
     st.markdown(
         """
             <div class="conteudo">
-                <h2 class="titulo-2">Análise dos Dados</h2>]
+                <h2 class="titulo-2">Análise dos Dados</h2>
                 <div class="paragrafo">
                     <p class="text">
-                        Com o intuito de fazermos uma análise dos dados que possuimos sobre o Lewis Hamilton e sua carreira, o primeiro passo é verificar a sua consistência ao longo das suas temporadas. Vale ressaltar que 
+                        Com intuito de analisar a carreira de Lewis Hamilton na Formula 1, o primeiro passo será observar sua consistência ao longo das temporadas, avaliando medidas como médias, medianas e desvios-padrão de seus resultados, além de métricas gerais como vitórias, pódios, poles e pontos. Em seguida, a análise será segmentada entre os anos de McLaren e de Mercedes, permitindo comparar a distribuição de seus desempenhos em cada equipe e identificar diferenças estatísticas relevantes. Também será investigado o impacto das mudanças de regulamento, utilizando intervalos de confiança e análise de dispersão para compreender como essas transições afetaram seu rendimento. Por fim, Hamilton será comparado aos seus companheiros de equipe, especialmente na Mercedes, aplicando testes de hipótese para verificar se, em média, seus resultados foram significativamente superiores aos dos colegas de time.
                     </p>
                 </div>
-                <h3 class="titulo-3">📈 Consistência e Evolução</h2>
+                <hr>
+                <h3 class="titulo-3">Panorama Geral da Carreira</h2>
                 <div class="paragrafo">
                     <p class="text">
-                        Aqui analisamos a evolução de Lewis Hamilton ao longo das temporadas,
-                        observando medidas centrais (média, mediana, moda) e também medidas
-                        de dispersão (desvio padrão). Isso nos ajuda a avaliar a regularidade
-                        do piloto em diferentes fases da carreira.
+                        O primeiro passo para a análise é observar o panorama geral da carreira de Lewis Hamilton. Para isso, é importante levantar informações básicas que ajudam a dimensionar sua trajetória, como o número total de vitórias conquistadas, a quantidade de pódios alcançados, quantas vezes ele largou na pole position e, por fim, o total de campeonatos mundiais que o piloto acumula ao longo da sua trajetória na Formula 1.
                     </p>
                 </div>
             </div>
         """, unsafe_allow_html=True
     )
 
-    # Exemplo: calcular métricas por temporada
-    resumo_hamilton = (
-        DATA_FRAME['df_dados_LH']
-        .groupby("ano")["posicao_final"]
-        .agg(["mean","median","std"])
-        .reset_index()
+    df_piloto = DATA_FRAME['df_dados_LH']
+
+    # Layout com duas colunas principais
+    imagemCol, metricasCol = st.columns([0.4, 0.6], vertical_alignment="center")
+
+    with imagemCol:
+        st.image(os.path.abspath('assets/img/hamilton.png'), use_container_width=True)
+
+    with metricasCol:
+
+        resumo_ano = df_piloto.groupby("ano").agg(
+            vitorias=("vitorias", "sum"),
+            poles=("pole_position", "sum"),
+            podios=("podios", "sum"),
+        ).reset_index().sort_values("ano")
+
+        total_temporadas = resumo_ano["ano"].nunique()
+        total_vitorias = int(resumo_ano["vitorias"].sum())
+        total_poles = int(resumo_ano["poles"].sum())
+        total_podios = int(resumo_ano["podios"].sum())
+        total_titulos = 7
+        total_corridas_terminadas = DATA_FRAME['df_dados_LH'][DATA_FRAME['df_dados_LH']["posicao_final"].notnull()].shape[0]
+
+        # Organizar métricas em 2 linhas de 2 colunas
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("🏁 Temporadas", total_temporadas, border=True)
+        with col2:
+            st.metric("🥇 Vitórias", total_vitorias, border=True)
+
+        col3, col4 = st.columns(2)
+        with col3:
+            st.metric("🎯 Poles", total_poles, border=True)
+        with col4:
+            st.metric("🏆 Pódios", total_podios, border=True)
+
+        col5, col6 = st.columns(2)
+        with col5:
+            st.metric("👑 Títulos do Campeonato", total_titulos, border=True)
+        with col6:
+            st.metric("🚦 Corridas Terminadas", total_corridas_terminadas, border=True)
+
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <div class="paragrafo">
+                    <p class="text">
+                        Ao analisarmos os números de Lewis Hamilton, rapidamente fica claro o tamanho do impacto que ele exerce dentro da Formula 1. Poucos pilotos na história conseguiram alcançar um patamar tão elevado e consistente. Para termos uma noção mais concreta dessa dimensão, basta lembrar que Ayrton Senna , considerado por muitos o maior nome da categoria , conquistou 41 vitórias ao longo de sua carreira. É verdade que, na época, havia um número menor de corridas por temporada, o que ajuda a explicar parcialmente essa diferença. No entanto, mesmo em um comparativo mais recente e equilibrado, Michael Schumacher, que divide com Hamilton o topo da lista de títulos mundiais, acumulou 95 vitórias ao longo de sua trajetória. Ainda assim, Hamilton conseguiu superar essa marca, deixando em evidência a grandiosidade de seu desempenho e reforçando sua posição como um dos maiores, senão o maior, da história da Formula 1.
+                    </p>
+                    <p class="text">
+                        Outro ponto impressionante são os <b>206 pódios</b> conquistados, lembrando que esse número inclui também suas vitórias.
+                        Se retirarmos os 105 triunfos do total, obtemos a proporção de aproximadamente <b>49% de vitórias</b> sobre os pódios. Ou seja, praticamente metade das vezes em que subiu ao pódio, foi no lugar mais alto. 
+                        Em comparação, Schumacher apresenta cerca de <b>41%</b>, um número altíssimo, mas ainda abaixo do britânico.
+                    </p>
+                    <p class="text">
+                        Nas poles, Hamilton também impressiona. Curiosamente, o número de poles coincide com o total de vitórias.
+                        Claro, isso não significa que todas as poles viraram vitórias. 
+                        Um exemplo claro foi em 2016, quando mesmo largando na frente, acabou colidindo com seu companheiro de equipe já na primeira curva.
+                    </p>
+                    <p class="text">
+                        No total, Hamilton <b>terminou 344 corridas</b>. Dessas, em <b>206</b> ele esteve no pódio, o que representa cerca de <b>40%</b>.
+                        Em outras palavras: a cada 10 corridas que completou, em 4 ele aparecia entre os três primeiros, uma consistência inacreditável.
+                    </p>
+                    <p class="text">
+                        É importante destacar que esses números são acumulados da carreira inteira.
+                        Para entender melhor como Hamilton construiu essa trajetória, precisamos olhar sua evolução ao longo das temporadas:
+                        será que ele sempre foi consistente desde o início, demonstrando talento natural,
+                        ou essa performance foi resultado de um processo de amadurecimento aliado ao carro e à equipe?
+                        Com isso em mente, faremos um gráfico médio da posição que ele ficou ao longo da temporada e comparar com a média de outros pilotos que correram na mesma época 
+                    </p>
+                    <p class="text">
+                        Com isso em mente, o próximo passo da análise será observar algumas medidas estatísticas que ajudam a traduzir numericamente o desempenho de Hamilton ao longo de sua carreira. Para cada temporada, iremos calcular métricas como a média, que mostra um panorama geral de seus resultados; a mediana e a moda, que ajudam a identificar padrões de consistência; além do desvio padrão e da variância, que indicam o quanto suas performances variaram ao longo do tempo. Dessa forma, será possível entender não apenas os números absolutos, mas também como eles se distribuem, revelando a evolução e a regularidade do piloto temporada após temporada.
+                    </p>
+                </div>
+            </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    # 🔹 Adiciona colunas de equipe e cor
-    resumo_hamilton["time"] = resumo_hamilton["ano"].apply(
-        lambda x: "McLaren" if x <= 2012 else "Mercedes"
-    )
-    resumo_hamilton["cores"] = resumo_hamilton["time"].map({
-        "McLaren": "orange",
-        "Mercedes": "silver"
-    })
 
-    col1, col2 = st.columns([0.3,0.7], vertical_alignment='center')
+    resumo_hamilton = DATA_FRAME['df_dados_LH'].groupby(["ano", "nome_equipe"]).agg(
+        mean=("posicao_final", "mean"),
+        median=("posicao_final", "median"),
+        std=("posicao_final", "std"),
+        var=("posicao_final", "var"),
+        moda=("posicao_final", lambda x: x.mode().iloc[0] if not x.mode().empty else None),
+    ).reset_index()
+
+    col1, col2 = st.columns([0.4,0.6], vertical_alignment='center')
 
     with col1:
-        st.dataframe(resumo_hamilton)
-
-    with col2:
-        # Gráfico interativo
-        fig = go.Figure()
-
-        for equipe in resumo_hamilton["time"].unique():
-            df_equipe = resumo_hamilton[resumo_hamilton["time"] == equipe]
-            cor = df_equipe["cores"].iloc[0]
-
-            # Linha da média
-            fig.add_trace(go.Scatter(
-                x=df_equipe["ano"],
-                y=df_equipe["mean"],
-                mode="lines+markers",
-                name=f"Média ({equipe})",
-                line=dict(color=cor, width=3),
-                marker=dict(size=8, color=cor)
-            ))
-
-            # Faixa de desvio padrão com transparência
-            fig.add_trace(go.Scatter(
-                x=pd.concat([df_equipe["ano"], df_equipe["ano"][::-1]]),
-                y=pd.concat([df_equipe["mean"] + df_equipe["std"], 
-                            (df_equipe["mean"] - df_equipe["std"])[::-1]]),
-                fill="toself",
-                fillcolor=get_rgba(cor, 0.2),
-                line=dict(color="rgba(255,255,255,0)"),
-                hoverinfo="skip",
-                name=f"±1 Desvio Padrão ({equipe})"
-            ))
-
-        # Layout
-        fig.update_layout(
-            title="📈 Evolução da Posição Média do Hamilton por Ano",
-            xaxis_title="Ano",
-            yaxis_title="Posição Final (média)",
-            template="plotly_white",
-            hovermode="x unified",
-            legend=dict(bordercolor="gray", borderwidth=0.5)
+        st.markdown(
+            """
+            <div class="conteudo">
+                <div class="paragrafo">
+                    <p class="text">
+                        Como podemos observar no gráfico ao lado, logo em seu ano de estreia, 
+                        <strong>Lewis Hamilton</strong> se destacou com <strong>médias</strong> e 
+                        <strong>medianas</strong> muito baixas para um novato na <i>Formula 1</i>. 
+                        Vale ressaltar que, naquele ano, ele quebrou o <strong>recorde de pontos de um estreante</strong>, 
+                        um feito que já evidenciava seu talento.
+                    </p>
+                    <p class="text">
+                        Entretanto, com a entrada de um <strong>novo regulamento</strong>, percebe-se uma 
+                        piora no desempenho, tanto na <strong>média</strong> quanto na <strong>mediana</strong>. 
+                        Isso se deve principalmente ao <i>carro</i>: a <strong>McLaren</strong> focou tanto na disputa de 2008 
+                        (quando Hamilton foi <strong>campeão mundial</strong>) que acabou negligenciando o desenvolvimento para a temporada seguinte. 
+                        Essa queda trouxe aprendizados e o carro evoluiu ao longo das corridas. 
+                        Ainda assim, insatisfeito com a estagnação, Hamilton migrou para a <strong>Mercedes</strong>.
+                    </p>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        medidas_centrais_grafico(resumo_hamilton)
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <div class="paragrafo">
+                    <p class="text">
+                        Na nova escuderia, o cenário mudou. Com o início da <strong>era híbrida</strong>, seu talento ficou ainda mais evidente: 
+                        as <strong>médias</strong> e <strong>medianas</strong> se mantiveram constantemente <strong>abaixo do 3º lugar</strong>, 
+                        marcando um período de <strong>domínio</strong> de Hamilton e da <strong>Mercedes</strong>.
+                    </p>
+                    <p class="text">
+                        O ponto de virada veio em <strong>2021</strong>, na histórica batalha contra <strong>Max Verstappen</strong>. 
+                        A <strong>Red Bull</strong> alcançou a Mercedes em desenvolvimento e a disputa foi acirrada até a última corrida, 
+                        quando Hamilton acabou derrotado.
+                    </p>
+                    <p class="text">
+                        Já a partir de <strong>2022</strong>, com o regulamento do <strong>efeito solo</strong>, a Mercedes enfrentou 
+                        sérios problemas de projeto. Hamilton também parecia não se adaptar bem ao novo conceito, refletindo em maior 
+                        <strong>instabilidade</strong> e em um <strong>desvio padrão</strong> mais evidente nas posições. 
+                        Apesar de alguma melhora em <strong>2023</strong>, as <strong>medianas</strong> e as <strong>médias</strong> passaram a seguir 
+                        uma tendência de <strong>crescimento</strong>, indicando resultados menos consistentes em relação ao auge da carreira.
+                    </p>
+                    <p class="text">
+                        Após entendermos a evolução de <strong>Hamilton</strong> ao longo dos anos e os impactos 
+                        dos diferentes <strong>regulamentos</strong> em seu desempenho, é importante observar também 
+                        a <strong>diferença entre suas passagens na McLaren e na Mercedes</strong>. 
+                        Para isso, elaboramos uma <i>distribuição das posições finais</i> separada por equipe, 
+                        o que permite visualizar de forma clara tanto seu desenvolvimento quanto a confirmação 
+                        dos pontos discutidos anteriormente.
+                    </p>
+                </div>
+            </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+    grafico_densidade_interativo(DATA_FRAME['df_dados_LH'])
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <div class="paragrafo">
+                    <p class="text">
+                    Como podemos observar acima, gráfico de <strong>distribuição de posições</strong> evidencia de forma clara a diferença entre as fases de Hamilton na 
+                    <strong>McLaren</strong> e na <strong>Mercedes</strong>. Enquanto na <strong>Mercedes</strong> sua curva é mais concentrada 
+                    nos primeiros lugares, com <i>pico</i> próximo da <strong>1ª posição</strong> e <i>média</i> de <strong>3.5</strong>, 
+                    já na <strong>McLaren</strong> a distribuição aparece mais espalhada, com <i>pico</i> em torno da <strong>2ª posição</strong> 
+                    e <i>média</i> de <strong>4.6</strong>. Isso mostra que, nos anos de <strong>Mercedes</strong>, Hamilton teve uma consistência 
+                    muito maior em lutar por <strong>vitórias</strong> e <strong>pódios</strong>, enquanto na <strong>McLaren</strong>, apesar de 
+                    competitivo, os resultados foram mais variáveis. 
+                    </p>
+                    <p class="text">
+                    Ainda assim, é importante destacar que, mesmo sem um <i>carro dominante</i>, Hamilton já apresentava desempenhos de alto nível. 
+                    Seu <strong>título de 2008</strong> é um exemplo disso: conquistado principalmente pelo talento e esforço, em uma temporada 
+                    marcada pela polêmica do <i>“Cingapuragate”</i>, que poderia ter mudado o rumo do campeonato em favor de <strong>Felipe Massa</strong>. 
+                    Na última corrida, porém, Hamilton garantiu o título com uma <strong>ultrapassagem decisiva</strong> na volta final, mesmo com Massa 
+                    vencendo a prova. 
+                    </p>
+                    <p class="text">
+                    Retomando o ponto central, vemos que a <i>era de dominância</i> da <strong>Mercedes</strong> foi determinante para que Hamilton 
+                    conquistasse <strong>6 de seus 7 títulos mundiais</strong>. No entanto, isso levanta uma questão importante: se a equipe era tão 
+                    dominante, por que apenas <strong>Hamilton</strong> conseguiu transformar essa superioridade em <strong>títulos</strong>, enquanto 
+                    seus <i>companheiros de equipe</i> não tiveram o mesmo sucesso? Para responder a isso, precisamos analisar também o desempenho 
+                    dos <strong>companheiros de equipe</strong> de Hamilton, o que será o próximo passo da nossa análise. 
+                    </p>
+                </div>
+            </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+
 
 
 # ------------------------------

@@ -65,6 +65,8 @@ def df_especifico() -> pd.DataFrame:
 
     # Criando colunas
     df_merge['vitorias'] = df_merge['posicao_final'] == 1 
+    df_merge['podios'] = df_merge['posicao_final'] <= 3
+    df_merge['pole_position'] = df_merge['posicao_grid'] == 1
 
     return df_merge
 

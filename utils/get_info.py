@@ -4,7 +4,7 @@ from utils.data_frames import *
 
 # Variável global
 EQUIPES_CORES = {
-    'McLaren': ['#FF8700', '#47C7FC'],  # Laranja (Papaya) e Azul
+    'McLaren': ['#FF8700', "#D1E3EB"],  # Laranja (Papaya) e Azul
     'BMW Sauber': ['#FFFFFF', '#0066CC', '#CC0000'],  # Branco, Azul BMW, Vermelho
     'Williams': ['#005AFF', '#FFFFFF'],  # Azul Williams e Branco
     'Renault': ['#FFD800', '#000000'],  # Amarelo e Preto
@@ -133,7 +133,7 @@ EQUIPES_CORES = {
     'Gordini': ['#FFFFFF', '#005AFF'],  # Branco e Azul
     'Stevens': ['#FFFFFF', '#005AFF'],  # Branco e Azul
     'Bugatti': ['#000000', '#FFFFFF'],  # Preto e Branco
-    'Mercedes': ['#00D2BE', '#000000'],  # Azul Petróleo e Preto
+    'Mercedes': ['#00D2BE', "#333232"],  # Azul Petróleo e Preto
     'Lancia': ['#FFFFFF', '#005AFF'],  # Branco e Azul
     'HWM': ['#FFFFFF', '#005AFF'],  # Branco e Azul
     'Schroeder': ['#FFFFFF', '#005AFF'],  # Branco e Azul
@@ -417,8 +417,8 @@ def get_sprints_results() -> pd.DataFrame:
         'grid' : 'posicao_grid',
         'position' : 'posicao_final',
         'points' : 'pontos',
-        'time' : 'tempo_volta',
-        'milliseconds' : 'ms_volta',
+        'time' : 'tempo_volta_ultima',
+        'milliseconds' : 'ms_volta_ultima',
         'fastestLap' : 'volta_rapida',
         'fastestLapTime' : 'volta_rapida_tempo',
     }
@@ -466,8 +466,8 @@ def get_race_results() -> pd.DataFrame:
         'grid' : 'posicao_grid',
         'position' : 'posicao_final',
         'points' : 'pontos',
-        'time' : 'tempo_volta',
-        'milliseconds' : 'ms_volta',
+        'time' : 'tempo_volta_ultima',
+        'milliseconds' : 'ms_volta_ultima',
         'fastestLap' : 'volta_rapida',
         'fastestLapTime' : 'volta_rapida_tempo',
     }
