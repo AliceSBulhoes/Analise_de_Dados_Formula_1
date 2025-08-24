@@ -402,7 +402,7 @@ def classificacao_conteudo() -> None:
         ("circuitId", "ID / Código", "Identificador único do circuito, valor técnico para referência."),
         ("resultId", "ID / Código", "Identificador único do resultado. Usado apenas para indexação."),
 
-        # Variáveis Qualitativas Nominais (categorias sem hierarquia)
+        # Variáveis Qualitativas Nominais 
         ("code", "Qualitativa Nominal", "Código de três letras do piloto (ex: HAM, VER). É apenas um rótulo."),
         ("nome_completo", "Qualitativa Nominal", "Nome completo do piloto, sem qualquer ordem implícita."),
         ("nome_equipe", "Qualitativa Nominal", "Nome da equipe (Mercedes, Ferrari). Não existe hierarquia."),
@@ -411,7 +411,7 @@ def classificacao_conteudo() -> None:
         ("tipo_corrida", "Qualitativa Nominal", "Tipo da corrida (Sprint ou Principal). Classificação binária sem hierarquia."),
         ("cores", "Qualitativa Nominal", "Cor associada à equipe. Apenas descritivo, sem significado numérico."),
 
-        # Variáveis Quantitativas Discretas (contagens inteiras, sem frações)
+        # Variáveis Quantitativas Discretas 
         ("posicao_grid", "Quantitativa Discreta", "Posição de largada, número inteiro. Usado em cálculos como ganho de posição."),
         ("posicao_final", "Quantitativa Discreta", "Posição final da corrida. Valores inteiros (1º, 2º, 3º), não admite frações."),
         ("positionOrder", "Quantitativa Discreta", "Ordem oficial registrada pela FIA. Contagem inteira de posição."),
@@ -420,12 +420,15 @@ def classificacao_conteudo() -> None:
         ("laps", "Quantitativa Discreta", "Número de voltas completadas. É uma contagem natural (1, 2, 3...)."),
         ("pontos", "Quantitativa Discreta", "Pontos obtidos segundo regulamento. Valores definidos e inteiros."),
         ("ganho_posicao", "Quantitativa Discreta", "Diferença entre posições de largada e chegada. Valor inteiro (positivo ou negativo)."),
-        ("vitorias", "Quantitativa Discreta", "Contagem de vitórias do piloto. É uma variável de contagem inteira."),
+        ("vitorias", "Quantitativa Discreta", "Um booleano em 0/1 representa se Hamilton venceu (1) ou não venceu (0) uma corrida. É considerado quantitativa discreta por assumir apenas dois valores inteiros possíveis e permitir cálculos estatísticos, como soma e média."),
+        ("rodada", "Quantitativa Discreta", "Contagem dos GP's de um ano. É uma variável de contagem inteira"),
 
-        # Variáveis Quantitativas Contínuas (medidas físicas, podem assumir infinitos valores)
+        # Variáveis Quantitativas Contínuas 
         ("tempo_volta", "Quantitativa Contínua", "Tempo de volta medido em escala contínua. Entre dois tempos sempre existe outro."),
         ("ms_volta", "Quantitativa Contínua", "Tempo de volta registrado em milissegundos. Representa medida contínua."),
-        ("volta_rapida_tempo", "Quantitativa Contínua", "Tempo da volta mais rápida, grandeza contínua com precisão infinita.")
+        ("volta_rapida_tempo", "Quantitativa Contínua", "Tempo da volta mais rápida, grandeza contínua com precisão infinita."),
+        ("data_corrida", "Quantitativa Contínua", "A data da corrida pode ser representada numericamente (como dias ou segundos em relação a uma origem no tempo). Dessa forma, assume valores em uma escala contínua e permite comparações e cálculos de intervalos entre corridas.")
+
     ]
 
 
@@ -453,6 +456,11 @@ def classificacao_conteudo() -> None:
     )
 
 
+# ------------------------------
+# Análise Exploratória dos Dados
+# ------------------------------
+def analise_conteudo() -> None:
+    """Função para renderizar """
 
 # ------------------------------
 # Renderizando tudo

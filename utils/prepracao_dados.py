@@ -7,7 +7,7 @@ def organizar_ids(df: pd.DataFrame, ids_prioritarios: list = None) -> pd.DataFra
     """Função para organizar os ID em primeiro no DF"""
     # Verificando se há ID prioritarios
     if ids_prioritarios is None:
-        ids_prioritarios = ['raceId', 'driverId', 'constructorId', 'statusId', 'circuitId', 'resultId', 'ano', 'code', 'nome_completo', 'numero_do_piloto','nome_equipe']
+        ids_prioritarios = ['raceId', 'driverId', 'constructorId', 'statusId', 'circuitId', 'resultId', 'ano', 'data_corrida', 'rodada', 'code', 'nome_completo', 'numero_do_piloto','nome_equipe']
 
     # Organizando
     ids = [col for col in ids_prioritarios if col in df.columns]
@@ -31,7 +31,7 @@ def merge_tabelas() -> pd.DataFrame:
     df_juntando = pd.concat([df_sprint, df_races_result])
 
     # Filtrandos as colunas necessárias para análise
-    df_races = df_races[['raceId', 'ano', 'circuitId', 'name_circuit']]
+    df_races = df_races[['raceId', 'ano', 'circuitId', 'name_circuit', 'rodada', 'data_corrida']]
     df_pilotos = df_pilotos[['driverId','nome_completo', 'code']]
     df_equipes = df_equipes[['constructorId','nome_equipe', 'cores']]
 
