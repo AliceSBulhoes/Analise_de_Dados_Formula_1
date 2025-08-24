@@ -5,7 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 # Importando funções auxiliares
 from utils.api_wiki import get_wikipedia_summary
-from utils.tratamento_dados import *
+from utils.get_info import *
+from utils.prepracao_dados import *
 
 # ------------------------------
 # Variáveis Globais
@@ -90,6 +91,7 @@ def dados_conteudo() -> None:
                         um único dataset para análise.
                     </p>
                 </div>
+                <hr>
                 <h3 class="titulo-3">Perguntas</h3>
                 <div class="paragrafo">
                     <p class="text">
@@ -103,7 +105,7 @@ def dados_conteudo() -> None:
                         <li>Comparado aos companheiros de equipe, ele se destacou?</li>
                         <li>Houve algum período de dominância? Essa dominância veio mais do carro ou do piloto?</li>
                     </ol>
-                    <p class="text">Nosso foco principal é a quinta pergunta: <strong>o que significa ser dominante?</strong> Para chegar a essa resposta, começaremos explorando as outras questões e, ao final, verificaremos se é possível afirmar ou não essa dominância. É provável que seja necessária uma análise mais ampla e detalhada, mas por enquanto, sabendo qual é nosso objetivo, o próximo passo é o <strong>tratamento de dados</strong>!</p>
+                    <p class="text">Nosso foco principal é a quinta pergunta: <strong>o que significa ser dominante?</strong> Para chegar a essa resposta, começaremos explorando as outras questões e, ao final, verificaremos se é possível afirmar ou não essa dominância. É provável que seja necessária uma análise mais ampla e detalhada, mas por enquanto, sabendo qual é nosso objetivo, o próximo passo é a <strong>preparação de dados</strong>!</p>
                 </div>
             </div>
         """,
@@ -131,6 +133,7 @@ def preparacao_conteudo() -> None:
                         que possam auxiliar em análises futuras.
                     </p>
                 </div>
+                <hr>
                 <h3 class="titulo-3">Visualizar DataFrames</h3>
                 <div class="paragrafo">
                     <p class="text">
@@ -178,19 +181,26 @@ def preparacao_conteudo() -> None:
     st.markdown(
         """
             <div class="conteudo">
+                <hr>
                 <div class="paragrafo">
                     <h3 class="titulo-3">DataFrame para Análise</h3>
                     <p class="text">
-                        Como podemos observar acima, as tabelas <strong>Resultados das Sprints</strong> 
-                        e <strong>Resultados das Corridas</strong> possuem as mesmas colunas. 
-                        Portanto, podemos concatená-las em um único DataFrame para obter um panorama 
-                        geral dos anos e do total de pontos, afinal, ambas podem ser consideradas corridas. 
-                        A diferença é que as <strong>Sprints</strong> são corridas mais curtas e, 
-                        apesar de muitos pilotos não apreciarem esse formato, seus pontos ainda são relevantes 
-                        para a análise. <br><br>
-                        Além disso, é importante incluir o ano em que cada corrida aconteceu, 
-                        facilitando a filtragem dos períodos em que Lewis Hamilton esteve ativo na Fórmula 1. 
-                        Com isso em mente, vamos construir esse DataFrame:
+                        As tabelas <strong>Resultados das Sprints</strong> e 
+                        <strong>Resultados das Corridas</strong> apresentam a mesma estrutura de colunas. 
+                        Por isso, podemos <strong>concatená-las</strong> em um único DataFrame, 
+                        obtendo uma visão consolidada do desempenho dos pilotos e do total de pontos 
+                        acumulados ao longo dos anos.
+                        Embora as <strong>Sprints</strong> sejam provas mais curtas, 
+                        e muitas vezes questionadas pelos próprios pilotos, 
+                        seus pontos também são relevantes para a análise e, portanto, serão considerados.
+                        Além disso, vamos incluir o <strong>ano</strong> de cada corrida e o 
+                        <strong>status final</strong> do piloto, permitindo identificar eventuais DNF 
+                        (<i>Did Not Finish</i>) em sua carreira. Isso facilitará a filtragem dos períodos 
+                        em que Lewis Hamilton esteve ativo na Formula 1.
+                        Por fim, construiremos dois DataFrames: 
+                        um exclusivo para <strong>Lewis Hamilton</strong> e outro abrangendo 
+                        <strong>todos os pilotos</strong>, de modo a possibilitar comparações diretas 
+                        com o heptacampeão.
                     </p>
                 </div>
             </div>
@@ -198,7 +208,249 @@ def preparacao_conteudo() -> None:
         unsafe_allow_html=True,
     )
 
+    col1, col2 = st.columns(2)
+
+    DATA_FRAME['df_dados_corridas'] = merge_tabelas()
+    DATA_FRAME['df_dados_LH'] = df_especifico()
     
+
+    with col1:
+        st.markdown("""
+            <div class="conteudo">
+                <h3 class="titulo-3" style="text-align: center;">Todas as Corridas (2007-2024)</h3>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.dataframe(DATA_FRAME['df_dados_corridas'])
+
+    with col2:
+        st.markdown("""
+            <div class="conteudo">
+                <h3 class="titulo-3" style="text-align: center;">Lewis Hamilton Resultados</h3>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.dataframe(DATA_FRAME['df_dados_LH'])
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <div class="paragrafo">
+                    <p class="text">
+                        Nestas tabelas estão reunidos os dados que servirão de base para a análise. 
+                        A tabela <strong>Todas as Corridas</strong> consolida informações das tabelas de 
+                        <i>Resultados das Sprints</i>, <i>Resultados das Corridas</i>, <i>Corridas</i>, 
+                        <i>Status</i>, <i>Equipes</i> e <i>Pilotos</i>. 
+                        Além disso, acrescentamos a coluna <i>"ganho_posicao"</i>, que indica 
+                        quantas posições o piloto conquistou ao longo da prova em relação ao grid de largada. <br><br>
+                        Já a tabela <strong>Lewis Hamilton Resultados</strong> mantém a mesma estrutura, 
+                        mas adiciona a coluna <i>"vitorias"</i>, permitindo identificar 
+                        quantas vezes o piloto terminou em primeiro lugar. Essa métrica é fundamental 
+                        para compreender sua performance ao longo da carreira, já que a vitória 
+                        é um dos principais indicadores de domínio na Formula 1. <br><br>
+                        Com essas informações, o próximo passo é verificar se existem valores nulos, 
+                        garantindo que nossa análise seja consistente e confiável.
+                    </p>
+                </div>
+                <hr>
+                <h2 class="titulo-2">Tratamento de Dados</h2>
+                <div class="paragrafo">
+                    <p class="text">
+                        No processo de tratamento, é importante destacar que nem todo valor nulo 
+                        representa uma inconsistência. Em alguns casos, a ausência de informação 
+                        também pode trazer insights relevantes. <br><br>
+                        Nesta seção, vamos verificar a quantidade de valores nulos em cada coluna dos DataFrames.
+                    </p>
+                </div>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col3, col4 = st.columns(2)
+
+    with col3:
+        st.markdown("""
+            <div class="conteudo">
+                <h3 class="titulo-3" style="text-align: center;">🔎 Valores Nulos por Coluna <br>(Todas as Corridas)</h3>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.dataframe(DATA_FRAME['df_dados_corridas'].isnull().sum().reset_index().rename(columns={"index": "Coluna", 0: "Nulos"}))
+    
+    with col4:
+        st.markdown("""
+            <div class="conteudo">
+                <h3 class="titulo-3" style="text-align: center;">🔎 Valores Nulos por Coluna <br> (Lewis Hamilton Resultados)</h3>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.dataframe(DATA_FRAME['df_dados_LH'].isnull().sum().reset_index().rename(columns={"index": "Coluna", 0: "Nulos"}))
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <div class="paragrafo">
+                    <p class="text">
+                        A análise dos valores nulos mostra que as colunas <i>"ganho_posicao"</i> e 
+                        <i>"posicao_final"</i> apresentam a mesma quantidade de registros ausentes. 
+                        Isso pode parecer uma coincidência à primeira vista, mas faz sentido dentro 
+                        do contexto da Formula 1.                  
+                        Nem todos os pilotos concluem a corrida: acidentes, falhas mecânicas ou 
+                        outros problemas podem levar ao <strong>DNF (Did Not Finish)</strong>. 
+                        Nesses casos, a ausência de informação não representa uma inconsistência, 
+                        mas sim o reflexo da realidade da prova. <br><br>
+                        Portanto, podemos considerar que a base de dados já passou por um tratamento 
+                        inicial adequado.
+                        Entretanto, antes de prosseguir, é fundamental verificar se ainda existem 
+                        <strong>linhas duplicadas</strong>, garantindo que nossa análise não seja 
+                        enviesada por registros repetidos.
+                    </p>
+                </div>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+
+    # ------ Duplicatas ------
+    cols_hashable = [
+        col for col in DATA_FRAME['df_dados_corridas'].columns
+        if pd.api.types.is_hashable(DATA_FRAME['df_dados_corridas'][col].dropna().iloc[0])
+    ]
+
+    duplicatas_corridas = DATA_FRAME['df_dados_corridas'].duplicated(subset=cols_hashable).sum()
+    duplicatas_lh = DATA_FRAME['df_dados_LH'].duplicated(subset=cols_hashable).sum()
+
+    col5, col6 = st.columns(2)
+
+    with col5:
+        st.markdown("""
+            <div class="conteudo">
+                <h3 class="titulo-3" style="text-align: center;">📌 Duplicatas <br>(Todas as Corridas)</h3>
+            </div>
+        """, unsafe_allow_html=True)
+
+        col1, col2, col3 = st.columns([1,2,1]) 
+        with col2:
+            st.metric("🔁 Duplicatas", duplicatas_corridas, border=True)
+
+    with col6:
+        st.markdown("""
+            <div class="conteudo">
+                <h3 class="titulo-3" style="text-align: center;">📌 Duplicatas <br>(Lewis Hamilton Resultados)</h3>
+            </div>
+        """, unsafe_allow_html=True)
+
+        col1, col2, col3 = st.columns([1,2,1])  
+
+        with col2:
+            st.metric("🔁 Duplicatas",duplicatas_lh, border=True)
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <div class="paragrafo">
+                    <p class="text">
+                        A verificação de duplicatas mostra que não há registros repetidos nos DataFrames. 
+                        Esse resultado confirma que o processo de preparação inicial dos dados foi consistente, 
+                        garantindo maior confiabilidade para as próximas etapas.
+                        Com essa base validada, podemos avançar para a 
+                        <strong>classificação das variáveis</strong> e a definição das visualizações 
+                        mais adequadas para a análise.
+                    </p>
+                </div>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+# ------------------------------
+# Classificação das Variáveis
+# ------------------------------
+def classificacao_conteudo() -> None:
+    """Renderiza a classificação variável por variável, com justificativa"""
+    st.markdown(
+        """
+            <div class="conteudo">
+                <h2 class="titulo-2">Classificação das Variáveis</h2>
+                <div class="paragrafo">
+                    <p class="text">
+                        Agora vamos classificar <strong>cada variável do dataset</strong> individualmente.  
+                        Para cada coluna, será apresentada sua categoria (qualitativa nominal, ordinal, 
+                        quantitativa discreta ou contínua) acompanhada de uma <strong>justificativa</strong> 
+                        explicando o porquê da classificação.  
+                        Isso ajuda a entender como elas podem ser usadas em análises e quais 
+                        técnicas estatísticas fazem sentido aplicar.
+                    </p>
+                </div>
+                <hr>
+                <h3 class="titulo-3">📋 Variáveis e seus Tipos</h3>
+            </div>
+        """, unsafe_allow_html=True
+    )
+
+    # Lista de variáveis com justificativas individuais
+    variaveis = [
+        # IDs (chaves técnicas, não usadas em análise estatística direta)
+        ("raceId", "ID / Código", "Identificador único da corrida. Não tem significado numérico, apenas relacional."),
+        ("driverId", "ID / Código", "Identificador único do piloto, usado para integrar informações entre tabelas."),
+        ("constructorId", "ID / Código", "Identificador único da equipe. Função de chave estrangeira."),
+        ("statusId", "ID / Código", "Identificador numérico do status da corrida. Sem interpretação estatística."),
+        ("circuitId", "ID / Código", "Identificador único do circuito, valor técnico para referência."),
+        ("resultId", "ID / Código", "Identificador único do resultado. Usado apenas para indexação."),
+
+        # Variáveis Qualitativas Nominais (categorias sem hierarquia)
+        ("code", "Qualitativa Nominal", "Código de três letras do piloto (ex: HAM, VER). É apenas um rótulo."),
+        ("nome_completo", "Qualitativa Nominal", "Nome completo do piloto, sem qualquer ordem implícita."),
+        ("nome_equipe", "Qualitativa Nominal", "Nome da equipe (Mercedes, Ferrari). Não existe hierarquia."),
+        ("name_circuit", "Qualitativa Nominal", "Nome do circuito (ex: Monza, Interlagos). Categoria descritiva."),
+        ("status_race", "Qualitativa Nominal", "Situação final (Finished, DNF, Accident). Categorias distintas, sem ordem."),
+        ("tipo_corrida", "Qualitativa Nominal", "Tipo da corrida (Sprint ou Principal). Classificação binária sem hierarquia."),
+        ("cores", "Qualitativa Nominal", "Cor associada à equipe. Apenas descritivo, sem significado numérico."),
+
+        # Variáveis Quantitativas Discretas (contagens inteiras, sem frações)
+        ("posicao_grid", "Quantitativa Discreta", "Posição de largada, número inteiro. Usado em cálculos como ganho de posição."),
+        ("posicao_final", "Quantitativa Discreta", "Posição final da corrida. Valores inteiros (1º, 2º, 3º), não admite frações."),
+        ("positionOrder", "Quantitativa Discreta", "Ordem oficial registrada pela FIA. Contagem inteira de posição."),
+        ("ano", "Quantitativa Discreta", "Ano da corrida. É uma contagem inteira e não assume valores intermediários."),
+        ("numero_do_piloto", "Quantitativa Discreta", "Número fixo do carro do piloto. É inteiro e não fracionável."),
+        ("laps", "Quantitativa Discreta", "Número de voltas completadas. É uma contagem natural (1, 2, 3...)."),
+        ("pontos", "Quantitativa Discreta", "Pontos obtidos segundo regulamento. Valores definidos e inteiros."),
+        ("ganho_posicao", "Quantitativa Discreta", "Diferença entre posições de largada e chegada. Valor inteiro (positivo ou negativo)."),
+        ("vitorias", "Quantitativa Discreta", "Contagem de vitórias do piloto. É uma variável de contagem inteira."),
+
+        # Variáveis Quantitativas Contínuas (medidas físicas, podem assumir infinitos valores)
+        ("tempo_volta", "Quantitativa Contínua", "Tempo de volta medido em escala contínua. Entre dois tempos sempre existe outro."),
+        ("ms_volta", "Quantitativa Contínua", "Tempo de volta registrado em milissegundos. Representa medida contínua."),
+        ("volta_rapida_tempo", "Quantitativa Contínua", "Tempo da volta mais rápida, grandeza contínua com precisão infinita.")
+    ]
+
+
+    # Criar dataframe com justificativas
+    df_variaveis = pd.DataFrame(variaveis, columns=["Variável", "Tipo", "Justificativa"])
+
+    st.dataframe(df_variaveis, use_container_width=True)
+
+    st.markdown(
+        """
+            <div class="conteudo">
+                <hr>
+                <div class="paragrafo">
+                    <p class="text">
+                        Após a classificação detalhada das variáveis, temos uma visão clara de seus 
+                        papéis dentro do conjunto de dados. Essa organização é essencial para orientar 
+                        a escolha das técnicas estatísticas e das visualizações mais adequadas. 
+                        Com essa base sólida, podemos avançar com maior segurança para a etapa de 
+                        <strong>análise exploratória</strong>, extraindo padrões, relações e insights 
+                        relevantes sobre o desempenho dos pilotos e equipes na Formula 1.
+                    </p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True
+    )
 
 
 
@@ -216,12 +468,12 @@ def conteudo() -> None:
         unsafe_allow_html=True,
     )
     
-    contextTab, dadosTab, prepTab, apresentacaoTab, analiseTab, conclusaoTab = st.tabs(
+    contextTab, dadosTab, prepTab, classificacaoTab, analiseTab, conclusaoTab = st.tabs(
         [
             ":material/contextual_token: Contexto",
             ":material/table: Dados Disponíveis",
             ":material/healing: Preparação",
-            ":material/search_insights: Apresentação",
+            ":material/search_insights: Classificação de Variáveis",
             ":material/analytics: Análise",
             ":material/pin_end: Conclusão"
         ]
@@ -233,6 +485,8 @@ def conteudo() -> None:
         dados_conteudo()
     with prepTab:
         preparacao_conteudo()
+    with classificacaoTab:
+        classificacao_conteudo()
 
 
 conteudo()

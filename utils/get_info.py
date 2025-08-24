@@ -408,12 +408,15 @@ def get_sprints_results() -> pd.DataFrame:
     """Função para conseguir a informação sobre o resultado das sprints"""
     df_sprints_results = data_frames['sprint_results'].copy()
 
+    # Remove colunas desnecessárias
+    df_sprints_results.drop(['positionText'], axis=1, inplace=True)
+    
     # Renomeando colunas
     colunas = {
         'number' : 'numero_do_piloto',
         'grid' : 'posicao_grid',
         'position' : 'posicao_final',
-        'points' : 'pontoss',
+        'points' : 'pontos',
         'time' : 'tempo_volta',
         'milliseconds' : 'ms_volta',
         'fastestLap' : 'volta_rapida',
@@ -455,7 +458,7 @@ def get_race_results() -> pd.DataFrame:
     df_race_results = data_frames['results'].copy()
     
     # Remove colunas desnecessárias
-    df_race_results.drop(['rank', 'fastestLapSpeed'], axis=1, inplace=True)
+    df_race_results.drop(['rank', 'fastestLapSpeed', 'positionText'], axis=1, inplace=True)
 
     # Renomeando colunas
     colunas = {

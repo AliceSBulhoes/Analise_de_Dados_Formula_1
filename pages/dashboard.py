@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 # Importando funções auxiliares
-from utils.tratamento_dados import *
+from utils.get_info import *
 from utils.api_wiki import get_wikipedia_summary
 
 # ------------------------------
