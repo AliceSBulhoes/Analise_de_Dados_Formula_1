@@ -81,3 +81,4 @@ certificados = [
 ]
 
 mostrar_certificados(certificados)
+st.warning("Aprendo muito mais quando estudo com vídeos no YouTube e pesquiso mais a fundo os temas que vejo na faculdade 🤓☝️")
