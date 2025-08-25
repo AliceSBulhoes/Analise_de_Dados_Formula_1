@@ -40,7 +40,7 @@ def conteudo() -> None:
         ano = st.selectbox("Selecione o ano:", sorted(listas_anos['ano'].unique()))
         # Filtra apenas o ano selecionado
         df_filtrado = listas_anos[listas_anos['ano'] == ano]
-        
+
         # Verifica quantidade de registros
         qtde = len(df_filtrado)
 
@@ -59,8 +59,10 @@ def conteudo() -> None:
         col4, col5 = st.columns([0.2,0.8], vertical_alignment='center')
 
         with col4:
-            image_path = resumo['image']
-            st.image(image_path, width=500)
+            if resumo and 'image' in resumo and resumo['image']:
+                st.image(resumo['image'], width=500)
+            else:
+                st.warning("⚠️ Nenhuma imagem disponível para este resumo.")
 
         with col5: 
             st.write(resumo['extract'] if resumo else "Não foi possível carregar informações.")
