@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 # Importando funções auxiliares
-from utils.api_wiki import get_wikipedia_summary
 from utils.dashboard_utils import *
 
 # ------------------------------
@@ -51,30 +50,17 @@ def conteudo() -> None:
         else:
             st.error(f"O ano {ano} não possui registros (possível bagunça!).")
 
-        # Dashboard do piloto
-        resumo = get_wikipedia_summary(piloto, lang="pt")
-
         st.subheader(f"📌 Sobre {piloto}")
 
-        col4, col5 = st.columns([0.2,0.8], vertical_alignment='center')
-
-        with col4:
-            if resumo and 'image' in resumo and resumo['image']:
-                st.image(resumo['image'], width=500)
-            else:
-                st.warning("⚠️ Nenhuma imagem disponível para este resumo.")
-
-        with col5: 
-            st.write(resumo['extract'] if resumo else "Não foi possível carregar informações.")
-            st.markdown("### 🏁 Informações Rápidas")
-            st.markdown(f"""
-            - **Nacionalidade:** {df_pilotos[df_pilotos['nome_completo']==piloto]['nacionalidade_piloto'].iloc[0] if 'nacionalidade_piloto' in df_pilotos.columns else '❓'}
-            - **Equipe:** {df_pilotos[df_pilotos['nome_completo']==piloto]['nome_equipe'].iloc[-1]}
-            - **Número do Carro:** {df_pilotos[df_pilotos['nome_completo']==piloto]['numero_do_piloto'].iloc[-1]}
-            - **Corridas Disputadas:** {len(df_pilotos[df_pilotos['nome_completo']==piloto])}
-            - **Vitórias:** {df_pilotos[df_pilotos['nome_completo']==piloto]['posicao_final'].eq(1).sum()}
-            - **Pódios:** {df_pilotos[df_pilotos['nome_completo']==piloto]['posicao_final'].le(3).sum()}
-            """)
+        st.markdown("### 🏁 Informações Rápidas")
+        st.markdown(f"""
+        - **Nacionalidade:** {df_pilotos[df_pilotos['nome_completo']==piloto]['nacionalidade_piloto'].iloc[0] if 'nacionalidade_piloto' in df_pilotos.columns else '❓'}
+        - **Equipe:** {df_pilotos[df_pilotos['nome_completo']==piloto]['nome_equipe'].iloc[-1]}
+        - **Número do Carro:** {df_pilotos[df_pilotos['nome_completo']==piloto]['numero_do_piloto'].iloc[-1]}
+        - **Corridas Disputadas:** {len(df_pilotos[df_pilotos['nome_completo']==piloto])}
+        - **Vitórias:** {df_pilotos[df_pilotos['nome_completo']==piloto]['posicao_final'].eq(1).sum()}
+        - **Pódios:** {df_pilotos[df_pilotos['nome_completo']==piloto]['posicao_final'].le(3).sum()}
+        """)
 
         st.divider()
         st.markdown(f"### 📊 Estatísticas de {ano}")

@@ -10,7 +10,6 @@ from scipy.stats import gaussian_kde
 from plotly.subplots import make_subplots
 from scipy import stats
 # Importando funções auxiliares
-from utils.api_wiki import get_wikipedia_summary
 from utils.get_info import *
 from utils.prepracao_dados import *
 
@@ -427,12 +426,12 @@ def contexto_conteudo() -> None:
     # ---- Sobre Lewis Hamilton ----
     df_pilotos = get_info_pilotos()
     df_piloto = df_pilotos[df_pilotos['nome_completo'] == PILOTO]
-    info_wiki = get_wikipedia_summary(df_piloto['wiki_url_piloto'].iloc[0])
-
+    # info_wiki = get_wikipedia_summary(df_piloto['wiki_url_piloto'].iloc[0])
+    # print(info_wiki)
     col3, col4 = st.columns([1, 2], vertical_alignment="center")
 
     with col3:
-        st.image(info_wiki['image'], use_container_width=True)
+        st.image(os.path.abspath('assets/img/hamilton-2.jpg'), use_container_width=True)
 
     with col4:
         st.markdown(
